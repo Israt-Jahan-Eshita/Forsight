@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { DesktopLayout } from './components/layout/DesktopLayout';
-import { AdminLayout } from './components/layout/AdminLayout';
 import { Login } from './pages/Login';
 import { TeacherDashboard } from './pages/TeacherDashboard';
 import { StudentDetail } from './pages/StudentDetail';
@@ -24,20 +23,33 @@ import { useAuth } from './context/AuthContext';
 function AppRoutes() {
   const { role } = useAuth();
   
+  // Dynamic Security Route Guard
+  if (!role) {
+    return (
+      <Routes>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+  
   return (
     <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-      </Route>
-      
-      <Route element={<AdminLayout />}>
+      <Route element={<DesktopLayout />}>
+        {/* Dynamic routing based on authenticated role */}
+        <Route path="/dashboard" element={
+          role === 'student' ? <StudentHome /> : 
+          role === 'admin' ? <AdminDashboard /> : 
+          <TeacherDashboard />
+        } />
+        
+        {/* Admin Specific Screens */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/registration" element={<AdminRegistration />} />
-      </Route>
-      
-      <Route element={<DesktopLayout />}>
-        {/* Dynamic routing based on mock role */}
-        <Route path="/dashboard" element={role === 'student' ? <StudentHome /> : <TeacherDashboard />} />
+        
+        {/* Teacher/Student Cohorts */}
         <Route path="/students" element={<TeacherDashboard />} />
         <Route path="/students/:id" element={<StudentDetail />} />
         <Route path="/resources" element={role === 'student' ? <StudentResources /> : <TeacherResources />} />
@@ -46,10 +58,11 @@ function AppRoutes() {
         <Route path="/quizzes" element={role === 'student' ? <StudentQuizzes /> : <TeacherQuizManager />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/profile" element={<Profile />} />
+        
+        {/* Wildcard Fallbacks */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
-
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

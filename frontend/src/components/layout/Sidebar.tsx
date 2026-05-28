@@ -25,6 +25,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: 'Profile', path: '/profile', icon: User },
   ];
 
+  const adminNav = [
+    { label: 'Admin Home', path: '/admin', icon: LayoutDashboard },
+    { label: 'Create Account', path: '/admin/registration', icon: Users },
+    { label: 'Profile', path: '/profile', icon: User },
+  ];
+
   const studentNav = [
     { label: 'Home', path: '/dashboard', icon: LayoutDashboard },
     { label: 'My Resources', path: '/resources', icon: UploadCloud },
@@ -35,7 +41,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: 'Profile', path: '/profile', icon: User },
   ];
 
-  const navItems = role === 'student' ? studentNav : teacherNav;
+  const navItems = role === 'student' ? studentNav : role === 'admin' ? adminNav : teacherNav;
 
   return (
     <aside className={cn(

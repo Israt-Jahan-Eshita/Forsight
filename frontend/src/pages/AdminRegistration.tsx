@@ -1,32 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { MoreVertical, Key, Copy, Check, CheckCircle2, Sparkles, X } from 'lucide-react';
+import { MoreVertical, Key, Copy, Check, CheckCircle2, Sparkles, X, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface MockUser {
   id: number;
   name: string;
   email: string;
   role: string;
-  subject?: string;
-  grade?: string;
   status: string;
 }
 
-const initialMockUsers: MockUser[] = [
-  { id: 1, name: 'Rahim Khan', email: 'rahim@school.edu', role: 'Teacher', subject: 'Science', status: 'Active' },
-  { id: 2, name: 'Sara Rahman', email: 'sara@student.edu', role: 'Student', grade: 'Class 10', status: 'Active' },
-];
-
 export function AdminRegistration() {
-  const [users, setUsers] = useState<MockUser[]>(initialMockUsers);
-  const [role, setRole] = useState('Teacher');
+  const { register, token } = useAuth();
+  const [users, setUsers] = useState<MockUser[]>([]);
+  const [role, setRole] = useState('TEACHER');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [grade, setGrade] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   
   // State for password showcase modal
   const [generatedPassword, setGeneratedPassword] = useState('');
@@ -34,34 +29,82 @@ export function AdminRegistration() {
   const [copied, setCopied] = useState(false);
   const [latestUser, setLatestUser] = useState<MockUser | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load all users from backend on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, [token]);
+
+  const fetchUsers = async () => {
+    try {
+      if (!token || token === 'mock-jwt-token') {
+        // Mock fallback data in preview mode
+        setUsers([
+          { id: 1, name: 'Rahim Khan', email: 'rahim@school.edu', role: 'TEACHER', status: 'Active' },
+          { id: 2, name: 'Sara Rahman', email: 'sara@student.edu', role: 'STUDENT', status: 'Active' },
+        ]);
+        return;
+      }
+
+      const response = await fetch('http://localhost:8080/api/messages/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch users, running in preview mode");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
+    setLoading(true);
+    setErrorMsg('');
 
-    // Generate a random-like password for premium feel
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const pass = `FS_${name.split(' ')[0] || 'User'}_${randomNum}!`;
+    try {
+      if (!token || token === 'mock-jwt-token') {
+        // Preview fallback logic
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const pass = `FS_${name.split(' ')[0] || 'User'}_${randomNum}!`;
+        const newUser: MockUser = {
+          id: users.length + 1,
+          name,
+          email,
+          role,
+          status: 'Active',
+        };
+        setUsers([newUser, ...users]);
+        setLatestUser(newUser);
+        setGeneratedPassword(pass);
+        setShowModal(true);
+        setCopied(false);
+        setName('');
+        setEmail('');
+        setLoading(false);
+        return;
+      }
 
-    const newUser: MockUser = {
-      id: users.length + 1,
-      name,
-      email,
-      role,
-      status: 'Active',
-      ...(role === 'Teacher' ? { subject } : { grade }),
-    };
+      // Real registration request
+      const data = await register(name, email, role);
+      
+      setLatestUser(data.user);
+      setGeneratedPassword(data.rawPassword);
+      setShowModal(true);
+      setCopied(false);
 
-    setUsers([newUser, ...users]);
-    setLatestUser(newUser);
-    setGeneratedPassword(pass);
-    setShowModal(true);
-    setCopied(false);
-
-    // Reset fields
-    setName('');
-    setEmail('');
-    setSubject('');
-    setGrade('');
+      // Reset fields & reload users list
+      setName('');
+      setEmail('');
+      fetchUsers();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyToClipboard = () => {
@@ -82,6 +125,11 @@ export function AdminRegistration() {
         {/* Header section with micro-animation */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-slide-up">
           <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="secondary" onClick={() => window.history.back()} className="h-8 w-8 p-0 flex items-center justify-center rounded-full" title="Go Back">
+                <ArrowLeft className="w-4 h-4 text-color-muted" />
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-color-accent animate-pulse-soft" />
               <span className="text-xs font-bold uppercase tracking-wider text-color-accent">System Administrator</span>
@@ -90,6 +138,12 @@ export function AdminRegistration() {
             <p className="text-color-muted mt-1 text-sm md:text-base">Provision new secure accounts for teachers and students.</p>
           </div>
         </div>
+
+        {errorMsg && (
+          <div className="p-4 bg-color-danger/10 text-color-danger font-medium rounded-xl text-center text-sm neu-inset animate-slide-up">
+            {errorMsg}
+          </div>
+        )}
 
         {/* Form Card with hover effects & neumorphic styling */}
         <Card className="neu-raised border border-white/50 backdrop-blur-xs bg-color-surface/80 p-6 md:p-8 animate-scale-in transition-all duration-300 hover:shadow-[12px_12px_24px_var(--shadow-dark),-12px_-12px_24px_var(--shadow-light)]">
@@ -116,47 +170,25 @@ export function AdminRegistration() {
                 className="w-full transition-all duration-200 focus:scale-[1.01]"
               />
               
-              <div className="flex flex-col gap-1.5 w-full transition-all duration-200 focus:scale-[1.01]">
+              <div className="flex flex-col gap-1.5 w-full transition-all duration-200 focus:scale-[1.01] md:col-span-2">
                 <label className="text-sm font-medium text-color-muted ml-1">Role</label>
                 <select 
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="neu-inset w-full px-4 py-2.5 text-color-text bg-color-surface focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer rounded-xl font-medium"
                 >
-                  <option value="Teacher">Teacher</option>
-                  <option value="Student">Student</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="STUDENT">Student</option>
                 </select>
-              </div>
-
-              {/* Dynamic Field with smooth slide-up animation */}
-              <div className="transition-all duration-300 ease-out animate-slide-up">
-                {role === 'Teacher' ? (
-                  <Input 
-                    label="Subject Area" 
-                    placeholder="e.g., Biology, Physics, Mathematics" 
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    required
-                    className="w-full"
-                  />
-                ) : (
-                  <Input 
-                    label="Grade / Class" 
-                    placeholder="e.g., Class 10, Class 12" 
-                    value={grade}
-                    onChange={(e) => setGrade(e.target.value)}
-                    required
-                    className="w-full"
-                  />
-                )}
               </div>
 
               <div className="md:col-span-2 pt-6">
                 <Button 
                   type="submit" 
                   className="w-full h-12 text-base font-semibold shadow-[4px_4px_8px_var(--shadow-dark),-4px_-4px_8px_var(--shadow-light)] rounded-xl"
+                  disabled={loading}
                 >
-                  Create Account & Generate Password
+                  {loading ? 'Creating...' : 'Create Account & Generate Password'}
                 </Button>
               </div>
             </form>
@@ -172,7 +204,7 @@ export function AdminRegistration() {
                 <thead>
                   <tr className="border-b border-black/5 neu-inset bg-color-surface/50">
                     <th className="px-6 py-4 font-semibold text-color-muted text-sm rounded-tl-xl">Name & Email</th>
-                    <th className="px-6 py-4 font-semibold text-color-muted text-sm">Role & Info</th>
+                    <th className="px-6 py-4 font-semibold text-color-muted text-sm">Role</th>
                     <th className="px-6 py-4 font-semibold text-color-muted text-sm">Status</th>
                     <th className="px-6 py-4 font-semibold text-color-muted text-sm text-right rounded-tr-xl">Actions</th>
                   </tr>
@@ -185,11 +217,14 @@ export function AdminRegistration() {
                         <div className="text-xs text-color-muted font-medium">{user.email}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-color-text text-sm">{user.role}</div>
-                        <div className="text-xs text-color-muted font-medium">{user.subject || user.grade}</div>
+                        <div className="font-semibold text-color-text text-sm">
+                          {user.role === 'TEACHER' ? 'Teacher' : 'Student'}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={user.status === 'Active' ? 'success' : 'default'}>{user.status}</Badge>
+                        <Badge variant={user.status === 'Active' ? 'success' : 'default'}>
+                          {user.status || 'Active'}
+                        </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button variant="icon" size="sm" className="cursor-pointer hover:bg-black/5 rounded-full p-1.5">
@@ -243,11 +278,7 @@ export function AdminRegistration() {
                 </div>
                 <div className="flex justify-between text-xs text-color-muted font-medium">
                   <span>ROLE</span>
-                  <span className="font-bold text-color-accent">{latestUser.role}</span>
-                </div>
-                <div className="flex justify-between text-xs text-color-muted font-medium">
-                  <span>{latestUser.role === 'Teacher' ? 'SUBJECT' : 'GRADE'}</span>
-                  <span className="font-bold text-color-text">{latestUser.subject || latestUser.grade}</span>
+                  <span className="font-bold text-color-accent">{latestUser.role === 'TEACHER' ? 'Teacher' : 'Student'}</span>
                 </div>
               </div>
 
