@@ -10,20 +10,49 @@ export function Login() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [roleSelect, setRoleSelect] = useState<Role>('teacher');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [modeNotice, setModeNotice] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+    setModeNotice('');
     
-    // Simulate API call and role detection
-    setTimeout(() => {
+    try {
+      // 1. Attempt actual Spring Boot API Authentication
+      await login(email, password);
       setLoading(false);
-      login(roleSelect);
       
-      if (roleSelect === 'admin') navigate('/admin');
-      else if (roleSelect === 'teacher') navigate('/dashboard');
+      // Redirect based on the actual authenticated user's role
+      const savedUser = JSON.parse(localStorage.getItem('fs_user') || '{}');
+      const actualRole = (savedUser.role || 'STUDENT').toLowerCase();
+      
+      if (actualRole === 'admin') navigate('/admin');
       else navigate('/dashboard');
-    }, 1000);
+      
+    } catch (err: any) {
+      // 2. Handle network offline or auth failure
+      const isNetworkError = err.message.includes('Failed to fetch') || err.message.includes('NetworkError');
+      
+      if (isNetworkError) {
+        // Automatically fallback to offline Preview Mode for rapid developer testing
+        setModeNotice('Spring Boot server offline. Launching in Offline Preview Mode...');
+        
+        setTimeout(() => {
+          login(roleSelect || 'teacher'); // Trigger simple preview login
+          setLoading(false);
+          if (roleSelect === 'admin') navigate('/admin');
+          else navigate('/dashboard');
+        }, 1500);
+      } else {
+        // Actual authentication refusal
+        setErrorMsg(err.message || 'Invalid email or password');
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -34,32 +63,53 @@ export function Login() {
       </CardHeader>
       
       <CardContent>
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-color-danger/10 text-color-danger font-medium rounded-xl text-center text-xs neu-inset">
+            {errorMsg}
+          </div>
+        )}
+
+        {modeNotice && (
+          <div className="mb-4 p-3 bg-color-warning/15 text-color-accent font-medium rounded-xl text-center text-xs neu-inset border-l-4 border-color-warning animate-pulse-soft">
+            {modeNotice}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <Input 
             label="Email" 
             type="email"
             placeholder="Enter your email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required 
           />
           <Input 
             label="Password" 
             type="password" 
             placeholder="Enter your password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required 
           />
           
-          {/* MOCK: Dropdown to select role for testing purposes since there is no real backend */}
-          <div className="flex flex-col gap-1.5 w-full">
-            <label className="text-sm font-medium text-color-muted ml-1">Mock Role Selection (Testing)</label>
+          {/* MOCK/FALLBACK: Dropdown to select role for previewing when backend is offline */}
+          <div className="flex flex-col gap-1.5 w-full mt-2">
+            <label className="text-xs font-semibold text-color-muted ml-1 uppercase tracking-wider">
+              Offline Preview Target Role
+            </label>
             <select 
               value={roleSelect || ''}
               onChange={(e) => setRoleSelect(e.target.value as Role)}
-              className="neu-inset w-full px-4 py-2 text-color-text bg-color-surface focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+              className="neu-inset w-full px-4 py-2.5 text-color-text bg-color-surface focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer rounded-xl font-medium"
             >
-              <option value="admin">Admin</option>
-              <option value="teacher">Teacher</option>
-              <option value="student">Student</option>
+              <option value="admin">Admin Dashboard</option>
+              <option value="teacher">Teacher Portal</option>
+              <option value="student">Student Portal</option>
             </select>
+            <span className="text-[10px] text-color-muted ml-1">
+              * Note: If the backend is running, this dropdown is bypassed and actual DB credentials are used.
+            </span>
           </div>
 
           <Button 
