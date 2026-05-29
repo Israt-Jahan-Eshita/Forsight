@@ -3,6 +3,7 @@ import { X, Send, Bot, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../context/AuthContext';
 
 type Message = {
   id: string;
@@ -11,10 +12,11 @@ type Message = {
 };
 
 export function ChatBot() {
+  const { token } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', sender: 'bot', text: 'Hello! I am EduLens Assistant. How can I help you today?' },
+    { id: '1', sender: 'bot', text: 'Hello! I am Forsight Assistant. How can I help you today?' },
   ]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,23 +29,40 @@ export function ChatBot() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = { id: Date.now().toString(), sender: 'user', text: input.trim() };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: 'I am your guide! To take a quiz, click on "My Quizzes" in the left menu, then click "Start Quiz".',
-      };
-      setMessages((prev) => [...prev, botMessage]);
+    try {
+      const historyStr = messages.map(m => m.sender + ": " + m.text).join("\n");
+      const response = await fetch('http://localhost:8080/api/ai/general-chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: currentInput, historyJson: historyStr })
+      });
+      
+      if (response.ok) {
+        const text = await response.text();
+        const botMessage: Message = { id: (Date.now() + 1).toString(), sender: 'bot', text };
+        setMessages((prev) => [...prev, botMessage]);
+      } else {
+        const errBot: Message = { id: (Date.now() + 1).toString(), sender: 'bot', text: 'I am having trouble connecting to the AI server.' };
+        setMessages((prev) => [...prev, errBot]);
+      }
+    } catch (e) {
+      const errBot: Message = { id: (Date.now() + 1).toString(), sender: 'bot', text: 'I am currently offline. Please try again later.' };
+      setMessages((prev) => [...prev, errBot]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -86,7 +105,7 @@ export function ChatBot() {
                 <div
                   className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1',
-                    msg.sender === 'user' ? 'bg-color-text text-white' : 'bg-white text-color-text neu-raised shadow-sm'
+                    msg.sender === 'user' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 neu-raised shadow-sm'
                   )}
                 >
                   {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -95,9 +114,10 @@ export function ChatBot() {
                   className={cn(
                     'p-3 rounded-2xl text-sm leading-relaxed shadow-sm',
                     msg.sender === 'user'
-                      ? 'bg-color-text text-white rounded-tr-sm'
-                      : 'bg-color-surface text-color-text neu-raised rounded-tl-sm'
+                      ? 'bg-slate-900 text-white rounded-tr-sm'
+                      : 'neu-raised text-slate-900 rounded-tl-sm'
                   )}
+                  style={msg.sender !== 'user' ? { backgroundColor: 'var(--color-surface)' } : {}}
                 >
                   {msg.text}
                 </div>

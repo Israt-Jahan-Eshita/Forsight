@@ -11,16 +11,7 @@ import java.util.List;
 
 @Repository
 public interface ResourceRepository extends JpaRepository<Resource, Long> {
-    
-    List<Resource> findByClassName(String className);
-    
-    List<Resource> findByClassNameAndSubject(String className, String subject);
+    List<Resource> findByCourse_Id(Long courseId);
     
     List<Resource> findByTeacher(User teacher);
-
-    @Query("SELECT DISTINCT r.className FROM Resource r")
-    List<String> findDistinctClassNames();
-
-    @Query("SELECT DISTINCT r.subject FROM Resource r WHERE r.className = :className")
-    List<String> findDistinctSubjectsByClassName(@Param("className") String className);
 }

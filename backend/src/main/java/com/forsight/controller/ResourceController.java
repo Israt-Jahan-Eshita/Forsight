@@ -24,24 +24,28 @@ public class ResourceController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.forsight.repository.CourseRepository courseRepository;
+
     @PostMapping("/upload")
     public ResponseEntity<?> uploadResource(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
-            @RequestParam("className") String className,
-            @RequestParam("subject") String subject) {
+            @RequestParam("courseId") Long courseId) {
 
         try {
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             User teacher = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
+            com.forsight.model.Course course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> new RuntimeException("Course not found"));
+
             Resource resource = Resource.builder()
                     .title(title)
                     .description(description)
-                    .className(className)
-                    .subject(subject)
+                    .course(course)
                     .fileName(file.getOriginalFilename())
                     .fileType(file.getContentType())
                     .fileData(file.getBytes())
@@ -57,8 +61,7 @@ public class ResourceController {
                             .id(savedResource.getId())
                             .title(savedResource.getTitle())
                             .description(savedResource.getDescription())
-                            .className(savedResource.getClassName())
-                            .subject(savedResource.getSubject())
+                            .course(savedResource.getCourse())
                             .fileName(savedResource.getFileName())
                             .fileType(savedResource.getFileType())
                             .teacher(savedResource.getTeacher())
@@ -75,14 +78,11 @@ public class ResourceController {
 
     @GetMapping
     public ResponseEntity<List<Resource>> getResources(
-            @RequestParam(value = "className", required = false) String className,
-            @RequestParam(value = "subject", required = false) String subject) {
+            @RequestParam(value = "courseId", required = false) Long courseId) {
 
         List<Resource> resources;
-        if (className != null && !className.trim().isEmpty() && subject != null && !subject.trim().isEmpty()) {
-            resources = resourceRepository.findByClassNameAndSubject(className, subject);
-        } else if (className != null && !className.trim().isEmpty()) {
-            resources = resourceRepository.findByClassName(className);
+        if (courseId != null) {
+            resources = resourceRepository.findByCourse_Id(courseId);
         } else {
             resources = resourceRepository.findAll();
         }
@@ -107,15 +107,21 @@ public class ResourceController {
                 .body(resource.getFileData());
     }
 
-    @GetMapping("/classes")
-    public ResponseEntity<List<String>> getClasses() {
-        return ResponseEntity.ok(resourceRepository.findDistinctClassNames());
+    @GetMapping("/{id}/view")
+    public ResponseEntity<byte[]> viewResource(@PathVariable("id") Long id) {
+        Resource resource = resourceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resource not found"));
+
+        if (resource.getFileData() == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(resource.getFileType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFileName() + "\"")
+                .body(resource.getFileData());
     }
 
-    @GetMapping("/subjects")
-    public ResponseEntity<List<String>> getSubjects(@RequestParam("className") String className) {
-        return ResponseEntity.ok(resourceRepository.findDistinctSubjectsByClassName(className));
-    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteResource(@PathVariable("id") Long id) {

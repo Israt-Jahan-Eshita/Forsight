@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { 
-  LayoutDashboard, Users, FileText, UploadCloud, 
-  CheckSquare, MessageCircle, User, LogOut, FileQuestion, Lightbulb, X
+  LayoutDashboard, Users, UploadCloud, 
+  CheckSquare, MessageCircle, User, LogOut, Lightbulb, X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,7 +20,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: 'My Students', path: '/students', icon: Users },
     { label: 'Resources', path: '/resources', icon: UploadCloud },
     { label: 'Submissions', path: '/submissions', icon: CheckSquare },
-    { label: 'Quiz Manager', path: '/quizzes', icon: FileText },
     { label: 'Messages', path: '/messages', icon: MessageCircle },
     { label: 'Profile', path: '/profile', icon: User },
   ];
@@ -36,7 +35,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { label: 'My Resources', path: '/resources', icon: UploadCloud },
     { label: 'Ask AI', path: '/ask-ai', icon: Lightbulb },
     { label: 'My Submissions', path: '/submissions', icon: CheckSquare },
-    { label: 'My Quizzes', path: '/quizzes', icon: FileQuestion },
     { label: 'Messages', path: '/messages', icon: MessageCircle },
     { label: 'Profile', path: '/profile', icon: User },
   ];

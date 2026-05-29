@@ -10,12 +10,17 @@ interface ChatMessage {
   content: string;
 }
 
+interface Course {
+  id: number;
+  name: string;
+  className: string;
+}
+
 interface Resource {
   id: number;
   title: string;
   description: string;
-  className: string;
-  subject: string;
+  course?: Course;
   fileName: string;
   fileType: string;
 }
@@ -63,7 +68,7 @@ export function StudentAskAI() {
         setNotes('');
       }
       setChatMessages([
-        { sender: 'ai', content: `Hello! I have loaded the study guide "${targetRes.title}" (${targetRes.fileName}) for ${targetRes.className} ${targetRes.subject}. What would you like to learn or analyze about this document today?` }
+        { sender: 'ai', content: `Hello! I have loaded the study guide "${targetRes.title}" (${targetRes.fileName}) for ${targetRes.course?.className || ''} ${targetRes.course?.name || ''}. What would you like to learn or analyze about this document today?` }
       ]);
     }
   }, [resources, selectedResourceId, location.state?.resourceId]);
@@ -73,8 +78,8 @@ export function StudentAskAI() {
       if (!token || token === 'mock-jwt-token') {
         const saved = localStorage.getItem('fs_mock_resources');
         const mockList: Resource[] = saved ? JSON.parse(saved) : [
-          { id: 1, title: 'Photosynthesis Notes', description: 'Detailed breakdown of chemical processes in leaves', className: 'Class 10', subject: 'Biology', fileName: 'Photosynthesis_Notes.pdf', fileType: 'application/pdf' },
-          { id: 2, title: 'Newton Laws Summary', description: 'Quick cheat sheet for Newton\'s first, second, and third laws', className: 'Class 10', subject: 'Physics', fileName: 'Newton_Laws.docx', fileType: 'application/docx' },
+          { id: 1, title: 'Photosynthesis Notes', description: 'Detailed breakdown of chemical processes in leaves', course: { id: 1, name: 'Biology', className: 'Class 10' }, fileName: 'Photosynthesis_Notes.pdf', fileType: 'application/pdf' },
+          { id: 2, title: 'Newton Laws Summary', description: 'Quick cheat sheet for Newton\'s first, second, and third laws', course: { id: 2, name: 'Physics', className: 'Class 10' }, fileName: 'Newton_Laws.docx', fileType: 'application/docx' },
         ];
         setResources(mockList);
         return;
@@ -96,8 +101,8 @@ export function StudentAskAI() {
         setResources(JSON.parse(saved));
       } else {
         setResources([
-          { id: 1, title: 'Photosynthesis Notes', description: 'Detailed breakdown of chemical processes in leaves', className: 'Class 10', subject: 'Biology', fileName: 'Photosynthesis_Notes.pdf', fileType: 'application/pdf' },
-          { id: 2, title: 'Newton Laws Summary', description: 'Quick cheat sheet for Newton\'s first, second, and third laws', className: 'Class 10', subject: 'Physics', fileName: 'Newton_Laws.docx', fileType: 'application/docx' },
+          { id: 1, title: 'Photosynthesis Notes', description: 'Detailed breakdown of chemical processes in leaves', course: { id: 1, name: 'Biology', className: 'Class 10' }, fileName: 'Photosynthesis_Notes.pdf', fileType: 'application/pdf' },
+          { id: 2, title: 'Newton Laws Summary', description: 'Quick cheat sheet for Newton\'s first, second, and third laws', course: { id: 2, name: 'Physics', className: 'Class 10' }, fileName: 'Newton_Laws.docx', fileType: 'application/docx' },
         ]);
       }
     }
@@ -115,13 +120,13 @@ export function StudentAskAI() {
           if (selectedResource) {
             setNotes(`## 📚 Smart Notes: ${selectedResource.title}\n\n` +
               `### 1. Curriculum Overview\n` +
-              `* **Subject Area:** ${selectedResource.subject}\n` +
-              `* **Class Cohort:** ${selectedResource.className}\n` +
+              `* **Subject Area:** ${selectedResource.course?.name || 'General'}\n` +
+              `* **Class Cohort:** ${selectedResource.course?.className || 'General'}\n` +
               `* **Document File:** ${selectedResource.fileName}\n\n` +
               `### 2. Main Abstract Summary\n` +
               `"${selectedResource.description || 'Comprehensive study resource compiled by your instructor.'}"\n\n` +
               `### 3. Glossary & Conceptual Definitions\n` +
-              `* **Core Concept:** Fundamental equations and structural insights regarding ${selectedResource.subject}.\n` +
+              `* **Core Concept:** Fundamental equations and structural insights regarding ${selectedResource.course?.name || 'General'}.\n` +
               `* **Instructional Guidelines:** Review definitions, verify practice tests in the Resources Shelf, and chat with the AI assistant for custom queries.`);
           }
         }, 1000);
@@ -175,7 +180,7 @@ export function StudentAskAI() {
           } else {
             botResponse = `### 🧠 Study Companion Response (Topic: ${selectedResource.title})\n` +
               `Regarding your question: *"${userMsg}"* in relation to the study guide **"${selectedResource.title}"**:\n\n` +
-              `* This relates to core **${selectedResource.subject}** topics for **${selectedResource.className}**.\n` +
+              `* This relates to core **${selectedResource.course?.name || 'General'}** topics for **${selectedResource.course?.className || 'General'}**.\n` +
               `* **Guide Abstract:** "*${selectedResource.description || 'Interactive curriculum learning guide'}*".\n` +
               `* Let me know if you would like me to define key terms or walk you through specific formulas!`;
           }
@@ -264,7 +269,7 @@ export function StudentAskAI() {
             <div className="h-4 w-5/6 bg-gray-200 rounded mb-8"></div>
             <div className="h-32 w-full bg-gray-100 rounded mb-6 flex flex-col items-center justify-center text-gray-500 font-serif border border-dashed border-gray-300 p-4 text-center">
               <span className="font-bold text-black text-xs">{fileName}</span>
-              <span className="text-[10px] opacity-75 mt-1 text-black">Course Material • {selectedResource?.subject}</span>
+              <span className="text-[10px] opacity-75 mt-1 text-black">Course Material • {selectedResource?.course?.name}</span>
             </div>
             <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
             <div className="h-4 w-4/5 bg-gray-200 rounded mb-2"></div>
@@ -335,7 +340,7 @@ export function StudentAskAI() {
                 {chatMessages.map((msg, idx) => (
                   <div 
                     key={idx} 
-                    className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium border-l-2 leading-relaxed shadow-sm ${msg.sender === 'user' ? 'self-end rounded-tr-sm bg-color-text text-white border-color-text' : 'self-start rounded-tl-sm bg-color-surface text-color-text border-color-accent/30 neu-raised'}`}
+                    className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium border-l-2 leading-relaxed shadow-sm ${msg.sender === 'user' ? 'self-end rounded-tr-sm bg-color-accent text-black border-color-accent' : 'self-start rounded-tl-sm bg-color-surface text-black border-color-accent/30 neu-raised'}`}
                   >
                     {msg.sender === 'ai' && (
                       <div className="flex items-center gap-1 mb-1 text-[10px] uppercase font-bold tracking-wider text-color-accent">

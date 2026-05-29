@@ -23,19 +23,44 @@ public class QuizController {
     @Autowired
     private UserRepository userRepository;
 
-    @PostMapping
-    public ResponseEntity<?> createQuiz(@RequestBody Quiz quizRequest) {
+    @Autowired
+    private com.forsight.service.FileUploadService fileUploadService;
+
+    @Autowired
+    private com.forsight.repository.ResourceRepository resourceRepository;
+
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<?> createQuiz(
+            @RequestParam("title") String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("className") String className,
+            @RequestParam("subject") String subject,
+            @RequestParam(value = "questionsJson", required = false) String questionsJson,
+            @RequestParam(value = "questionText", required = false) String questionText,
+            @RequestParam(value = "resourceId", required = false) Long resourceId,
+            @RequestParam(value = "questionImageUrl", required = false) String questionImageUrlParam,
+            @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
         try {
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             User teacher = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
+            String imageUrl = questionImageUrlParam != null ? questionImageUrlParam : fileUploadService.storeFile(file);
+
+            com.forsight.model.Resource resource = null;
+            if (resourceId != null) {
+                resource = resourceRepository.findById(resourceId).orElse(null);
+            }
+
             Quiz quiz = Quiz.builder()
-                    .title(quizRequest.getTitle())
-                    .description(quizRequest.getDescription())
-                    .className(quizRequest.getClassName())
-                    .subject(quizRequest.getSubject())
-                    .questionsJson(quizRequest.getQuestionsJson())
+                    .title(title)
+                    .description(description)
+                    .className(className)
+                    .subject(subject)
+                    .questionsJson(questionsJson)
+                    .questionText(questionText)
+                    .questionImageUrl(imageUrl)
+                    .resource(resource)
                     .teacher(teacher)
                     .createdDate(LocalDateTime.now())
                     .build();

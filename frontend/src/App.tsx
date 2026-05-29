@@ -9,8 +9,9 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminRegistration } from './pages/AdminRegistration';
 import { TeacherResources } from './pages/TeacherResources';
 import { TeacherSubmissions } from './pages/TeacherSubmissions';
-import { TeacherQuizManager } from './pages/TeacherQuizManager';
 import { Messages } from './pages/Messages';
+import { RiskDashboard } from './pages/RiskDashboard';
+import { TeacherStudentsList } from './pages/TeacherStudentsList';
 
 import { StudentHome } from './pages/StudentHome';
 import { StudentResources } from './pages/StudentResources';
@@ -50,12 +51,14 @@ function AppRoutes() {
         <Route path="/admin/registration" element={<AdminRegistration />} />
         
         {/* Teacher/Student Cohorts */}
-        <Route path="/students" element={<TeacherDashboard />} />
+        <Route path="/students" element={<TeacherStudentsList />} />
         <Route path="/students/:id" element={<StudentDetail />} />
+        <Route path="/teacher/student/:id" element={<StudentDetail />} />
+        <Route path="/teacher/risk-dashboard" element={<RiskDashboard />} />
         <Route path="/resources" element={role === 'student' ? <StudentResources /> : <TeacherResources />} />
         <Route path="/ask-ai" element={<StudentAskAI />} />
         <Route path="/submissions" element={role === 'student' ? <StudentSubmissions /> : <TeacherSubmissions />} />
-        <Route path="/quizzes" element={role === 'student' ? <StudentQuizzes /> : <TeacherQuizManager />} />
+        <Route path="/quizzes" element={role === 'student' ? <StudentQuizzes /> : <Navigate to="/resources" replace />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/profile" element={<Profile />} />
         

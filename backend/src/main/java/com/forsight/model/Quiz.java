@@ -24,6 +24,16 @@ public class Quiz {
     @Column(name = "questions_json", columnDefinition = "TEXT")
     private String questionsJson; // JSON representation of questions
 
+    @Column(name = "question_text", columnDefinition = "TEXT")
+    private String questionText;
+
+    @Column(name = "question_image_url")
+    private String questionImageUrl;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "resource_id")
+    private Resource resource;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "teacher_id")
     private User teacher;
@@ -34,13 +44,16 @@ public class Quiz {
     // Constructors
     public Quiz() {}
 
-    public Quiz(Long id, String title, String description, String className, String subject, String questionsJson, User teacher, LocalDateTime createdDate) {
+    public Quiz(Long id, String title, String description, String className, String subject, String questionsJson, String questionText, String questionImageUrl, Resource resource, User teacher, LocalDateTime createdDate) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.className = className;
         this.subject = subject;
         this.questionsJson = questionsJson;
+        this.questionText = questionText;
+        this.questionImageUrl = questionImageUrl;
+        this.resource = resource;
         this.teacher = teacher;
         this.createdDate = createdDate;
     }
@@ -64,6 +77,15 @@ public class Quiz {
     public String getQuestionsJson() { return questionsJson; }
     public void setQuestionsJson(String questionsJson) { this.questionsJson = questionsJson; }
 
+    public String getQuestionText() { return questionText; }
+    public void setQuestionText(String questionText) { this.questionText = questionText; }
+
+    public String getQuestionImageUrl() { return questionImageUrl; }
+    public void setQuestionImageUrl(String questionImageUrl) { this.questionImageUrl = questionImageUrl; }
+
+    public Resource getResource() { return resource; }
+    public void setResource(Resource resource) { this.resource = resource; }
+
     public User getTeacher() { return teacher; }
     public void setTeacher(User teacher) { this.teacher = teacher; }
 
@@ -82,6 +104,9 @@ public class Quiz {
         private String className;
         private String subject;
         private String questionsJson;
+        private String questionText;
+        private String questionImageUrl;
+        private Resource resource;
         private User teacher;
         private LocalDateTime createdDate;
 
@@ -91,11 +116,14 @@ public class Quiz {
         public QuizBuilder className(String className) { this.className = className; return this; }
         public QuizBuilder subject(String subject) { this.subject = subject; return this; }
         public QuizBuilder questionsJson(String questionsJson) { this.questionsJson = questionsJson; return this; }
+        public QuizBuilder questionText(String questionText) { this.questionText = questionText; return this; }
+        public QuizBuilder questionImageUrl(String questionImageUrl) { this.questionImageUrl = questionImageUrl; return this; }
+        public QuizBuilder resource(Resource resource) { this.resource = resource; return this; }
         public QuizBuilder teacher(User teacher) { this.teacher = teacher; return this; }
         public QuizBuilder createdDate(LocalDateTime createdDate) { this.createdDate = createdDate; return this; }
 
         public Quiz build() {
-            return new Quiz(id, title, description, className, subject, questionsJson, teacher, createdDate);
+            return new Quiz(id, title, description, className, subject, questionsJson, questionText, questionImageUrl, resource, teacher, createdDate);
         }
     }
 }

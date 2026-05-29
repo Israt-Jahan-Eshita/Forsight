@@ -4,7 +4,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { FileQuestion, CheckCircle, XCircle, ChevronLeft, Bot, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Badge } from '../components/ui/Badge';
 
 interface Question {
   q: string;
@@ -19,6 +18,8 @@ interface Quiz {
   className: string;
   subject: string;
   questionsJson: string;
+  questionText?: string;
+  questionImageUrl?: string;
 }
 
 export function StudentQuizzes() {
@@ -28,13 +29,17 @@ export function StudentQuizzes() {
   
   const selectedQuizId = location.state?.quizId as number | undefined;
 
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   
   // Quiz taking state
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
+  
+  // Free text / image answer state
+  const [answerText, setAnswerText] = useState('');
+  const [answerImage, setAnswerImage] = useState<File | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   
   // Graded / Result state
@@ -52,13 +57,12 @@ export function StudentQuizzes() {
         const mockQz: Quiz[] = localQz ? JSON.parse(localQz) : [
           { id: 1, title: 'Physics Unit 1 Practice', description: 'Kinematics and Forces', className: 'Class 10', subject: 'Physics', questionsJson: '[{"q":"What is the formula for force?","a":"F = ma","options":["F = ma","E = mc^2","V = IR","P = IV"]},{"q":"What is the standard acceleration due to gravity on Earth?","a":"9.8 m/s^2","options":["9.8 m/s^2","8.9 m/s^2","10.5 m/s^2","7.2 m/s^2"]}]' }
         ];
-        setQuizzes(mockQz);
 
         if (selectedQuizId) {
           const qz = mockQz.find(q => q.id === selectedQuizId);
           if (qz) {
             setActiveQuiz(qz);
-            const parsedQ = JSON.parse(qz.questionsJson);
+            const parsedQ = JSON.parse(qz.questionsJson || '[]');
             setQuestions(parsedQ);
             setSelectedAnswers(new Array(parsedQ.length).fill(''));
 
@@ -79,7 +83,6 @@ export function StudentQuizzes() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data: Quiz[] = await response.json();
-      setQuizzes(data);
 
       // Check if student has already submitted this specific quiz
       if (selectedQuizId) {
@@ -92,7 +95,7 @@ export function StudentQuizzes() {
         const qz = data.find(q => q.id === selectedQuizId);
         if (qz) {
           setActiveQuiz(qz);
-          const parsedQ = JSON.parse(qz.questionsJson) as Question[];
+          const parsedQ = JSON.parse(qz.questionsJson || '[]') as Question[];
           setQuestions(parsedQ);
           setSelectedAnswers(new Array(parsedQ.length).fill(''));
 
@@ -104,20 +107,6 @@ export function StudentQuizzes() {
       }
     } catch (e) {
       console.error(e);
-    }
-  };
-
-  const startQuiz = (qz: Quiz) => {
-    setActiveQuiz(qz);
-    try {
-      const parsedQ = JSON.parse(qz.questionsJson) as Question[];
-      setQuestions(parsedQ);
-      setSelectedAnswers(new Array(parsedQ.length).fill(''));
-      setCurrentQ(0);
-      setShowResult(false);
-      setGradedResult(null);
-    } catch (e) {
-      console.error("Failed to parse quiz questions", e);
     }
   };
 
@@ -140,38 +129,45 @@ export function StudentQuizzes() {
   };
 
   const handleSubmit = async () => {
-    // Validate that all questions are answered
-    if (selectedAnswers.includes('')) {
-      alert('Please answer all questions before submitting.');
+    const hasQuestions = questions.length > 0;
+    if (hasQuestions && selectedAnswers.includes('')) {
+      alert('Please answer all multiple-choice questions before submitting.');
       return;
     }
+    if (!hasQuestions && !answerText && !answerImage) {
+      alert('Please provide an answer text or upload an image.');
+      return;
+    }
+
     setSubmitting(true);
 
-    // Compute automatic MCQ score
     let score = 0;
-    questions.forEach((q, idx) => {
-      if (q.a === selectedAnswers[idx]) {
-        score++;
-      }
-    });
+    if (hasQuestions) {
+      questions.forEach((q, idx) => {
+        if (q.a === selectedAnswers[idx]) {
+          score++;
+        }
+      });
+    }
 
     try {
-      const payload = {
-        quizId: activeQuiz?.id,
-        answersJson: JSON.stringify(selectedAnswers),
-        score,
-        maxScore: questions.length
-      };
+      const formData = new FormData();
+      if (activeQuiz?.id) formData.append('quizId', activeQuiz.id.toString());
+      if (hasQuestions) formData.append('answersJson', JSON.stringify(selectedAnswers));
+      if (answerText) formData.append('answerText', answerText);
+      if (answerImage) formData.append('file', answerImage);
+      formData.append('score', score.toString());
+      formData.append('maxScore', (hasQuestions ? questions.length : 10).toString());
 
       if (!token || token === 'mock-jwt-token') {
-        // Preview mode mock submission
         const mockSub = {
           id: 999,
           quiz: activeQuiz,
           score,
-          maxScore: questions.length,
+          maxScore: hasQuestions ? questions.length : 10,
           status: 'PENDING',
-          answersJson: JSON.stringify(selectedAnswers),
+          answersJson: hasQuestions ? JSON.stringify(selectedAnswers) : '',
+          answerText,
           feedback: 'Great effort! Your answers are submitted for detailed review.'
         };
         
@@ -189,10 +185,9 @@ export function StudentQuizzes() {
       const response = await fetch('http://localhost:8080/api/submissions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       if (response.ok) {
@@ -277,38 +272,56 @@ export function StudentQuizzes() {
         {/* Review Questions Grid */}
         <div className="space-y-4 pt-4">
           <h3 className="text-lg font-bold font-serif text-color-text">Detailed Answer Sheet</h3>
-          {questions.map((q, idx) => {
-            const isCorrect = q.a === studentAnswers[idx];
-            return (
-              <Card key={idx} className="p-5 border border-white/50 bg-color-surface neu-raised">
-                <div className="flex justify-between items-start gap-4">
-                  <div>
-                    <h4 className="font-bold text-color-text text-sm">Q{idx + 1}. {q.q}</h4>
-                    <div className="mt-3 space-y-2">
-                      <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${isCorrect ? 'bg-color-success/15 text-color-success' : 'bg-color-danger/15 text-color-danger'}`}>
-                        {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                        <span>Your Answer: {studentAnswers[idx]}</span>
-                      </div>
-                      {!isCorrect && (
-                        <div className="p-2.5 rounded-xl text-xs font-semibold bg-color-success/15 text-color-success flex items-center gap-1.5">
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Correct Answer: {q.a}</span>
+          
+          {questions.length === 0 ? (
+            <Card className="p-5 border border-white/50 bg-color-surface neu-raised space-y-4">
+              {gradedResult.answerText && (
+                <div>
+                  <h4 className="text-xs font-bold text-color-muted uppercase mb-2">Your Text Answer</h4>
+                  <p className="text-sm font-mono whitespace-pre-wrap p-3 bg-color-surface neu-inset rounded-xl">{gradedResult.answerText}</p>
+                </div>
+              )}
+              {gradedResult.answerImageUrl && (
+                <div>
+                  <h4 className="text-xs font-bold text-color-muted uppercase mb-2">Your Uploaded Image</h4>
+                  <img src={`http://localhost:8080${gradedResult.answerImageUrl}`} alt="Submitted Work" className="max-w-full rounded-lg border border-black/10" />
+                </div>
+              )}
+            </Card>
+          ) : (
+            questions.map((q, idx) => {
+              const isCorrect = q.a === studentAnswers[idx];
+              return (
+                <Card key={idx} className="p-5 border border-white/50 bg-color-surface neu-raised">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <h4 className="font-bold text-color-text text-sm">Q{idx + 1}. {q.q}</h4>
+                      <div className="mt-3 space-y-2">
+                        <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${isCorrect ? 'bg-color-success/15 text-color-success' : 'bg-color-danger/15 text-color-danger'}`}>
+                          {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                          <span>Your Answer: {studentAnswers[idx]}</span>
                         </div>
-                      )}
+                        {!isCorrect && (
+                          <div className="p-2.5 rounded-xl text-xs font-semibold bg-color-success/15 text-color-success flex items-center gap-1.5">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Correct Answer: {q.a}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            );
-          })}
+                </Card>
+              );
+            })
+          )}
         </div>
       </div>
     );
   }
 
   // Render Interactive Quiz Taking View
-  if (activeQuiz && questions.length > 0) {
-    const currentQuestion = questions[currentQ];
+  if (activeQuiz && (questions.length > 0 || activeQuiz.questionText || activeQuiz.questionImageUrl)) {
+    const isMCQ = questions.length > 0;
     
     return (
       <div className="animate-fade-in pb-20 max-w-3xl mx-auto flex flex-col items-center pt-8 space-y-6">
@@ -316,48 +329,99 @@ export function StudentQuizzes() {
           <Button variant="secondary" size="sm" onClick={() => { setActiveQuiz(null); }} className="flex items-center gap-1">
             <ChevronLeft className="w-4 h-4" /> Cancel
           </Button>
-          <span className="font-bold text-color-muted text-xs uppercase">Question {currentQ + 1} of {questions.length}</span>
+          <span className="font-bold text-color-muted text-xs uppercase">
+            {isMCQ ? `Question ${currentQ + 1} of ${questions.length}` : 'Free Response Question'}
+          </span>
         </div>
         
-        <div className="w-full h-2 neu-inset rounded-full bg-color-surface overflow-hidden">
-          <div className="h-full bg-color-accent transition-all duration-300" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
-        </div>
+        {isMCQ && (
+          <div className="w-full h-2 neu-inset rounded-full bg-color-surface overflow-hidden">
+            <div className="h-full bg-color-accent transition-all duration-300" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
+          </div>
+        )}
 
         <Card className="w-full p-8 md:p-10 text-center shadow-lg border border-white/50 bg-color-surface/95 neu-raised">
-          <h2 className="text-xl md:text-2xl font-bold font-serif mb-8 text-color-text leading-relaxed">
-            {currentQuestion.q}
-          </h2>
-          
-          <div className="flex flex-col gap-4 max-w-md mx-auto text-left">
-            {currentQuestion.options.map((opt) => (
-              <label 
-                key={opt}
-                onClick={() => handleSelectOption(opt)} 
-                className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200 select-none ${selectedAnswers[currentQ] === opt ? 'neu-inset border-color-accent text-color-accent font-bold scale-[0.98]' : 'neu-raised hover:bg-black/[0.01] text-color-text'}`}
-              >
-                <input 
-                  type="radio" 
-                  name="quiz-options" 
-                  checked={selectedAnswers[currentQ] === opt}
-                  onChange={() => {}} // Controlled by label click
-                  className="w-5 h-5 accent-color-accent cursor-pointer" 
+          {isMCQ ? (
+            <>
+              <h2 className="text-xl md:text-2xl font-bold font-serif mb-8 text-color-text leading-relaxed">
+                {questions[currentQ].q}
+              </h2>
+              
+              <div className="flex flex-col gap-4 max-w-md mx-auto text-left">
+                {questions[currentQ].options.map((opt) => (
+                  <label 
+                    key={opt}
+                    onClick={() => handleSelectOption(opt)} 
+                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200 select-none ${selectedAnswers[currentQ] === opt ? 'neu-inset border-color-accent text-color-accent font-bold scale-[0.98]' : 'neu-raised hover:bg-black/[0.01] text-color-text'}`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="quiz-options" 
+                      checked={selectedAnswers[currentQ] === opt}
+                      onChange={() => {}} // Controlled by label click
+                      className="w-5 h-5 accent-color-accent cursor-pointer" 
+                    />
+                    <span className="text-sm font-medium">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-left space-y-6">
+              {activeQuiz.questionText && (
+                <div>
+                  <h2 className="text-xl font-bold font-serif mb-2 text-color-text leading-relaxed">
+                    Question Prompt
+                  </h2>
+                  <p className="text-sm font-mono whitespace-pre-wrap p-4 neu-inset bg-color-surface rounded-xl">
+                    {activeQuiz.questionText}
+                  </p>
+                </div>
+              )}
+              {activeQuiz.questionImageUrl && (
+                <div>
+                  <img src={`http://localhost:8080${activeQuiz.questionImageUrl}`} alt="Question Prompt" className="max-w-full rounded-lg border border-black/10 mx-auto" />
+                </div>
+              )}
+              
+              <div className="pt-6 border-t border-black/10">
+                <h3 className="font-bold text-color-text mb-3">Your Answer</h3>
+                <textarea 
+                  placeholder="Type your detailed answer here..." 
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
+                  className="w-full neu-inset px-4 py-3 bg-color-surface text-sm text-color-text focus:outline-none focus:ring-2 focus:ring-accent rounded-xl min-h-[150px] mb-4" 
                 />
-                <span className="text-sm font-medium">{opt}</span>
-              </label>
-            ))}
-          </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-color-muted uppercase mb-1 block">Upload Work Image (Optional)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setAnswerImage(e.target.files?.[0] || null)}
+                    className="w-full neu-inset px-4 py-2 bg-color-surface text-sm text-color-muted focus:outline-none rounded-xl cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-color-accent/10 file:text-color-accent hover:file:bg-color-accent/20 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
 
         <div className="w-full flex justify-between items-center pt-4">
-          <Button variant="secondary" className="px-6 h-10" onClick={handleBack} disabled={currentQ === 0}>
-            Previous
-          </Button>
-          {currentQ < questions.length - 1 ? (
+          {isMCQ && (
+            <Button variant="secondary" className="px-6 h-10" onClick={handleBack} disabled={currentQ === 0}>
+              Previous
+            </Button>
+          )}
+          
+          <div className="flex-1"></div>
+
+          {isMCQ && currentQ < questions.length - 1 ? (
             <Button className="px-6 h-10" onClick={handleNext} disabled={!selectedAnswers[currentQ]}>
               Next Question
             </Button>
           ) : (
-            <Button className="px-10 h-10 shadow-md font-bold" onClick={handleSubmit} disabled={submitting || !selectedAnswers[currentQ]}>
+            <Button className="px-10 h-10 shadow-md font-bold" onClick={handleSubmit} disabled={submitting || (isMCQ && !selectedAnswers[currentQ])}>
               {submitting ? 'Submitting Test...' : 'Submit Practice Quiz'}
             </Button>
           )}
@@ -366,41 +430,15 @@ export function StudentQuizzes() {
     );
   }
 
-  // Default List of Active Practice Quizzes (if accessed directly rather than resources path)
+  // Fallback if accessed without a specific quiz ID
   return (
-    <div className="animate-fade-in pb-20 max-w-5xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-color-text font-serif">My Practice Shelf</h1>
-        <p className="text-color-muted mt-1">Review active practice assessments and self-tests.</p>
-      </div>
-      
-      {quizzes.length === 0 ? (
-        <Card className="h-60 flex flex-col items-center justify-center text-color-muted neu-raised bg-color-surface">
-          <FileQuestion className="w-12 h-12 mb-2 opacity-25" />
-          <p className="font-semibold text-sm">No practice quizzes available right now.</p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {quizzes.map((qz) => (
-            <Card key={qz.id} className="p-6 border border-white/50 bg-color-surface neu-raised flex flex-col justify-between hover:shadow-md transition-all">
-              <div>
-                <div className="w-12 h-12 neu-inset bg-color-surface flex items-center justify-center rounded-xl text-color-accent mb-4">
-                  <FileQuestion className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-xl mb-1 text-color-text font-serif">{qz.title}</h3>
-                <p className="text-xs text-color-muted mb-6">{qz.description || 'Self-evaluation practice'}</p>
-                <div className="flex gap-2">
-                  <Badge variant="success">{qz.className}</Badge>
-                  <Badge variant="default" className="text-black font-bold">{qz.subject}</Badge>
-                </div>
-              </div>
-              <Button className="w-full mt-6 h-10 font-bold" onClick={() => startQuiz(qz)}>
-                Start Practice Quiz
-              </Button>
-            </Card>
-          ))}
-        </div>
-      )}
+    <div className="animate-fade-in pb-20 max-w-5xl mx-auto space-y-8 h-[70vh] flex flex-col items-center justify-center text-center">
+      <FileQuestion className="w-16 h-16 text-color-muted opacity-30 mb-4" />
+      <h1 className="text-3xl font-bold text-color-text font-serif">Practice Assessment Missing</h1>
+      <p className="text-color-muted mt-1 max-w-sm">Please navigate to your Resources page to select and practice a specific topic's assessment.</p>
+      <Button className="mt-4 px-8" onClick={() => navigate('/resources')}>
+        Go to My Resources
+      </Button>
     </div>
   );
 }

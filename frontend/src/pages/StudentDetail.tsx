@@ -1,109 +1,352 @@
-import { useState } from 'react';
-import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { useState, useEffect } from 'react';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
-import { Bot, AlertTriangle, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Bot, ArrowLeft, Languages, Copy, CheckCircle2, Activity } from 'lucide-react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  BarChart, Bar, Legend, AreaChart, Area
+} from 'recharts';
 
 export function StudentDetail() {
   const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [insight, setInsight] = useState('');
+  const location = useLocation();
+  const { id } = useParams();
+  const { token } = useAuth();
+  
+  const studentData = location.state?.student || {
+    id: Number(id), name: 'Loading...', email: '', status: 'Safe', riskScore: 0, courseName: ''
+  };
 
-  const generateInsight = () => {
-    setIsGenerating(true);
-    setInsight('');
-    
-    // Simulate streaming text
-    const text = "Aarav has missed 3 assignments in the last 2 weeks and his quiz scores dropped by 15%. This sudden change in behavior might be due to external factors. Recommend a 1-on-1 check-in.";
-    let i = 0;
-    
-    const interval = setInterval(() => {
-      setInsight(text.substring(0, i));
-      i++;
-      if (i > text.length) {
-        clearInterval(interval);
-        setIsGenerating(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [insightGenerating, setInsightGenerating] = useState(false);
+  const [insightWhy, setInsightWhy] = useState('');
+  const [insightWhat, setInsightWhat] = useState('');
+  
+  const [translationGenerating, setTranslationGenerating] = useState(false);
+  const [translationText, setTranslationText] = useState('');
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Mock data for Recharts
+  const scoreTrendData = [
+    { day: '1', score: 85 }, { day: '5', score: 82 }, { day: '10', score: 88 },
+    { day: '15', score: 75 }, { day: '20', score: 60 }, { day: '25', score: 55 }, { day: '30', score: 45 },
+  ];
+
+  const engagementRadarData = [
+    { subject: 'Participation', A: 40, fullMark: 100 },
+    { subject: 'Homework', A: 30, fullMark: 100 },
+    { subject: 'Quiz Score', A: 50, fullMark: 100 },
+    { subject: 'Attendance', A: 90, fullMark: 100 },
+    { subject: 'Time spent', A: 45, fullMark: 100 },
+  ];
+
+  const cohortCompareData = [
+    { name: 'This Student', score: 45 },
+    { name: 'Class Avg', score: 78 },
+    { name: 'Top 10%', score: 95 },
+  ];
+
+  useEffect(() => {
+    fetchLogs();
+  }, [token]);
+
+  const fetchLogs = async () => {
+    try {
+      const logsRes = await fetch('http://localhost:8080/api/logs/recent', { headers: { 'Authorization': `Bearer ${token}` } });
+      if (logsRes.ok) {
+        setLogs(await logsRes.json());
       }
-    }, 30);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const generateInsight = async () => {
+    setInsightGenerating(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/ai/student-insight', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `Student: ${studentData.name}, Score: ${studentData.riskScore}% Risk, Course: ${studentData.courseName}` })
+      });
+      if (response.ok) {
+        const text = await response.text();
+        const parts = text.split('|||');
+        setInsightWhy(parts[0]?.replace('Section 1:', '')?.trim() || "Analysis unavailable.");
+        setInsightWhat(parts[1]?.replace('Section 2:', '')?.trim() || "Actions unavailable.");
+      }
+    } catch (e) {
+      setInsightWhy("Error fetching insights.");
+    } finally {
+      setInsightGenerating(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    setShowTranslateModal(true);
+    if (translationText || translationGenerating) return;
+    setTranslationGenerating(true);
+    try {
+      const contentToTranslate = `${insightWhy} ${insightWhat}`;
+      const response = await fetch('http://localhost:8080/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: contentToTranslate })
+      });
+      if (response.ok) {
+        setTranslationText(await response.text());
+      }
+    } catch (e) {
+      setTranslationText("Translation failed.");
+    } finally {
+      setTranslationGenerating(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'Critical': return 'text-color-danger bg-color-danger/10 border-color-danger';
+      case 'At-Risk': return 'text-color-warning bg-color-warning/10 border-color-warning';
+      case 'Watch': return 'text-color-accent bg-color-accent/10 border-color-accent';
+      default: return 'text-color-success bg-color-success/10 border-color-success';
+    }
+  };
+
+  const getRingColor = (score: number) => {
+    if (score >= 80) return 'stroke-color-danger';
+    if (score >= 60) return 'stroke-color-warning';
+    if (score >= 30) return 'stroke-color-accent';
+    return 'stroke-color-success';
   };
 
   return (
-    <div className="animate-fade-in pb-20 max-w-5xl mx-auto">
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="icon" onClick={() => navigate(-1)}>
+    <div className="animate-fade-in pb-20 max-w-6xl mx-auto space-y-6">
+      
+      {/* Top Nav */}
+      <div className="flex items-center gap-4">
+        <Button variant="icon" onClick={() => navigate(-1)} className="bg-color-surface neu-raised border-none text-color-text">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-color-text">Student Profile</h1>
+        <h1 className="text-2xl font-bold text-color-text font-serif">Deep Dive Analytics</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Student Meta Card */}
-        <Card className="md:col-span-1 p-8 items-center text-center">
-          <Avatar fallback="AP" size="lg" className="w-24 h-24 mb-2" />
-          <h2 className="text-xl font-bold">Aarav Patel</h2>
-          <p className="text-color-muted text-sm mb-4">Class 10 - Science</p>
-          <Badge variant="danger" className="mb-6 px-4 py-1 text-sm">Critical Risk</Badge>
-          
-          <div className="w-full bg-color-background neu-inset p-4 rounded-xl flex justify-between items-center mt-auto">
-            <span className="text-sm font-medium">Risk Score</span>
-            <span className="text-2xl font-bold text-color-danger">85%</span>
+      {/* 1. Header Card */}
+      <Card className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 bg-color-surface neu-raised border border-white/50 relative overflow-hidden">
+        <div className={`absolute inset-0 opacity-5 ${studentData.riskScore > 60 ? 'bg-color-danger' : 'bg-color-success'}`} />
+        
+        <div className="flex items-center gap-6 z-10 w-full md:w-auto">
+          <Avatar fallback={studentData.name[0]} size="lg" className="w-24 h-24 border-4 border-white shadow-md" />
+          <div>
+            <h2 className="text-3xl font-extrabold text-color-text font-serif leading-tight">{studentData.name}</h2>
+            <p className="text-sm font-mono text-color-muted uppercase mt-1 mb-3">{studentData.courseName}</p>
+            <span className={`px-3 py-1 rounded-md text-xs font-black tracking-wider uppercase border ${getStatusColor(studentData.status)}`}>
+              {studentData.status}
+            </span>
           </div>
-        </Card>
+        </div>
 
-        {/* AI Insight Panel */}
-        <Card className="md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-color-accent" />
-              <span>AI Behavioral Insight</span>
-            </div>
-            <Button 
-              size="sm" 
-              onClick={generateInsight} 
-              disabled={isGenerating || insight.length > 0}
-            >
-              Generate Insight
-            </Button>
-          </CardHeader>
-          <CardContent className="bg-color-background neu-inset rounded-xl p-6 min-h-[160px] flex flex-col justify-center">
-            {!insight && !isGenerating ? (
-              <div className="text-center text-color-muted flex flex-col items-center gap-2">
-                <AlertTriangle className="w-8 h-8 opacity-20" />
-                <p>Click generate to analyze recent behavior patterns.</p>
-              </div>
-            ) : (
-              <p className="text-color-text leading-relaxed">
-                {insight}
-                {isGenerating && <span className="inline-block w-2 h-4 ml-1 bg-color-accent animate-pulse"></span>}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Behavior Timeline */}
-      <Card>
-        <CardHeader>Recent Activity Timeline</CardHeader>
-        <CardContent className="pt-4">
-          <div className="flex flex-col gap-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-black/10 before:to-transparent">
-            {/* Timeline Item */}
-            <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-color-surface neu-raised text-color-danger shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl neu-raised bg-color-surface">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="font-bold text-sm">Missed Science Quiz</h4>
-                  <span className="text-xs text-color-muted">Today</span>
-                </div>
-                <p className="text-sm text-color-muted">Did not submit the weekly physics assessment.</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
+        {/* Animated Risk Gauge */}
+        <div className="relative w-32 h-32 shrink-0 flex items-center justify-center z-10 flex-col">
+          <svg className="absolute inset-0 w-full h-full -rotate-90">
+            <circle cx="64" cy="64" r="58" className="stroke-black/5 fill-none stroke-[8px]" />
+            <circle 
+              cx="64" cy="64" r="58" 
+              className={`fill-none stroke-[8px] transition-all duration-1000 ${getRingColor(studentData.riskScore)}`}
+              strokeDasharray={`${(studentData.riskScore / 100) * 364} 364`}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="text-2xl font-extrabold font-serif">{studentData.riskScore}%</span>
+          <span className="text-[9px] font-bold text-color-muted uppercase tracking-wider">Risk Score</span>
+        </div>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* 2. Behavior Timeline (Left Column) */}
+        <div className="lg:col-span-1 space-y-4">
+          <h3 className="font-bold font-serif text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-color-accent" /> Behavior Timeline</h3>
+          <Card className="p-0 bg-color-surface neu-inset border border-black/5 h-[600px] overflow-y-auto">
+            <div className="relative p-6">
+              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-black/5 via-black/10 to-transparent"></div>
+              <div className="space-y-6">
+                {logs.length > 0 ? logs.map((log, i) => (
+                  <div key={i} className="relative flex items-start gap-4 z-10">
+                    <div className={`w-4 h-4 rounded-full mt-1 shrink-0 border-2 border-white shadow-sm ${log.eventType === 'CRITICAL' || log.eventType === 'WARNING' ? 'bg-color-danger' : 'bg-color-accent'}`} />
+                    <div>
+                      <p className="text-[10px] font-bold text-color-accent mb-0.5">
+                        {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </p>
+                      <div className="text-xs font-medium text-color-text bg-white/60 p-3 rounded-xl border border-black/5 shadow-sm">
+                        {log.eventDescription}
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-xs text-color-muted italic pl-8">No recent activities recorded.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* 3. Asymmetric Charts Grid & AI Insight (Right Columns) */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Charts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Score Trend (Full Width) */}
+            <Card className="md:col-span-2 p-4 bg-color-surface border border-white/60 neu-raised">
+              <h4 className="text-xs font-bold text-color-muted uppercase mb-4">30-Day Score Trend</h4>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={scoreTrendData}>
+                    <defs>
+                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#888'}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#888'}} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                    <Area type="monotone" dataKey="score" stroke="#818cf8" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Engagement Radar (50%) */}
+            <Card className="p-4 bg-color-surface border border-white/60 neu-raised flex flex-col">
+              <h4 className="text-xs font-bold text-color-muted uppercase mb-0">Engagement Radar</h4>
+              <div className="h-48 w-full -mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={engagementRadarData}>
+                    <PolarGrid stroke="rgba(0,0,0,0.05)" />
+                    <PolarAngleAxis dataKey="subject" tick={{fontSize: 9, fill: '#888'}} />
+                    <Radar name="Student" dataKey="A" stroke="#818cf8" fill="#818cf8" fillOpacity={0.4} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Cohort Compare (50%) */}
+            <Card className="p-4 bg-color-surface border border-white/60 neu-raised flex flex-col">
+              <h4 className="text-xs font-bold text-color-muted uppercase mb-4">Cohort Comparison</h4>
+              <div className="h-40 w-full mt-auto">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cohortCompareData} layout="vertical" margin={{top: 0, right: 0, left: -20, bottom: 0}}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#555', fontWeight: 'bold'}} />
+                    <Tooltip cursor={{fill: 'rgba(0,0,0,0.02)'}} />
+                    <Bar dataKey="score" fill="#c7d2fe" radius={[0, 4, 4, 0]}>
+                      {cohortCompareData.map((entry, index) => (
+                        <cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : '#818cf8'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+
+          {/* 4. AI Insight Panel */}
+          <Card className="p-0 bg-color-surface neu-raised border border-color-accent/20 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-color-accent/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+            
+            <div className="p-5 border-b border-black/5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-color-accent" />
+                <h3 className="font-bold font-serif text-color-text">AI Diagnostic Insight</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {insightWhy && (
+                  <Button variant="secondary" size="sm" onClick={handleTranslate} className="text-[10px] h-8 bg-color-background font-bold px-3">
+                    <Languages className="w-3 h-3 mr-1" /> Translate to Bangla
+                  </Button>
+                )}
+                <Button size="sm" onClick={generateInsight} disabled={insightGenerating} className="text-[10px] h-8 bg-color-accent text-white font-bold px-4 hover:brightness-110">
+                  {insightGenerating ? 'Analyzing...' : 'Generate Insight'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 bg-color-background/50 min-h-[200px]">
+              {!insightWhy && !insightGenerating && (
+                <div className="h-full flex flex-col items-center justify-center text-center text-color-muted py-8">
+                  <Bot className="w-12 h-12 opacity-10 mb-2" />
+                  <p className="text-sm">Click generate to run predictive behavioral diagnostics.</p>
+                </div>
+              )}
+
+              {insightGenerating && (
+                <div className="h-full flex flex-col items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-color-accent border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-xs font-bold text-color-accent animate-pulse">Running advanced diagnostic model...</p>
+                </div>
+              )}
+
+              {insightWhy && !insightGenerating && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up">
+                  <div className="bg-white/60 p-4 rounded-xl border border-color-danger/10 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-color-danger" />
+                    <h5 className="font-bold text-xs text-color-danger mb-2 uppercase tracking-wide">Why Struggling</h5>
+                    <p className="text-xs text-color-text/90 leading-relaxed font-serif italic">"{insightWhy}"</p>
+                  </div>
+                  <div className="bg-white/60 p-4 rounded-xl border border-color-success/10 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-color-success" />
+                    <h5 className="font-bold text-xs text-color-success mb-2 uppercase tracking-wide">Recommended Action</h5>
+                    <p className="text-xs text-color-text/90 leading-relaxed font-serif italic">"{insightWhat}"</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* 5. Translate Modal */}
+      {showTranslateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="absolute inset-0" onClick={() => setShowTranslateModal(false)} />
+          <Card className="w-full max-w-lg p-6 bg-color-surface border border-white/60 shadow-[20px_20px_40px_var(--shadow-dark),-20px_-20px_40px_var(--shadow-light)] rounded-2xl relative z-10">
+            <h3 className="font-bold font-serif text-lg mb-4 flex items-center gap-2">
+              <Languages className="w-5 h-5 text-color-accent" /> Formal Parent Briefing (Bangla)
+            </h3>
+            
+            <div className="p-5 bg-color-background neu-inset rounded-xl min-h-[150px] mb-4 text-sm leading-relaxed text-color-text font-serif">
+              {translationGenerating ? (
+                <div className="flex flex-col items-center justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-color-accent border-t-transparent rounded-full animate-spin mb-2" />
+                  <span className="text-xs text-color-muted">Translating context...</span>
+                </div>
+              ) : (
+                <p>{translationText}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setShowTranslateModal(false)}>Close</Button>
+              <Button 
+                className="bg-color-accent text-white" 
+                onClick={() => { navigator.clipboard.writeText(translationText); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                disabled={!translationText || translationGenerating}
+              >
+                {copied ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />} 
+                {copied ? 'Copied' : 'Copy to Clipboard'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }
