@@ -11,12 +11,12 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class AiService {
@@ -28,8 +28,8 @@ public class AiService {
 
     public String generateNotes(Resource resource) {
         String prompt = "Generate comprehensive, highly structured, and visually beautiful study notes for this topic:\n" +
-                "Subject: " + resource.getSubject() + "\n" +
-                "Class Group: " + resource.getClassName() + "\n" +
+                "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
+                "Class Group: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
                 "Resource Title: " + resource.getTitle() + "\n" +
                 "Description: " + (resource.getDescription() != null ? resource.getDescription() : "Study guide") + "\n\n" +
                 "Please format the output beautifully using standard Markdown. Include key concepts, detailed bullet definitions, summaries, and relevant equations/formulas. Keep it clear, elegant, and highly educational.";
@@ -42,8 +42,8 @@ public class AiService {
         
         String userPrompt = "We are discussing a study guide:\n" +
                 "Title: " + resource.getTitle() + "\n" +
-                "Subject: " + resource.getSubject() + "\n" +
-                "Class: " + resource.getClassName() + "\n" +
+                "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
+                "Class: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
                 "Description: " + (resource.getDescription() != null ? resource.getDescription() : "") + "\n\n" +
                 "Conversation History:\n" + historyJson + "\n\n" +
                 "User's new question: " + message;
@@ -51,23 +51,19 @@ public class AiService {
         return callGrok(systemPrompt, userPrompt, resource);
     }
 
-
+    public String generateQuiz(String prompt) {
+        String systemPrompt = "You are Forsight AI, an expert educational assessment creator. Generate practice questions based on the user's prompt. Provide the output in clean text or Markdown so the teacher can review it. Do not include extra conversational filler.";
+        // Passing null for Resource since we are just using the prompt directly
+        return callGrok(systemPrompt, prompt, null);
+    }
 
     private String callGrok(String systemPrompt, String userPrompt, Resource resource) {
         try {
-            URL url = new URL("https://api.groq.com/openai/v1/chat/completions");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + apiKey);
-            conn.setDoOutput(true);
-
             String pdfContent = extractPdfText(resource);
             if (!pdfContent.isEmpty()) {
                 userPrompt += "\n\nHere is the extracted text from the study guide document for context:\n" + pdfContent;
             }
 
-            // Construct JSON Payload using Jackson
             ObjectNode rootNode = objectMapper.createObjectNode();
             rootNode.put("model", "llama-3.1-8b-instant");
             ArrayNode messagesArray = rootNode.putArray("messages");
@@ -82,45 +78,30 @@ public class AiService {
 
             String jsonPayload = objectMapper.writeValueAsString(rootNode);
 
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(apiKey);
 
-            int responseCode = conn.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                StringBuilder response = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                    String responseLine;
-                    while ((responseLine = br.readLine()) != null) {
-                        response.append(responseLine.trim());
-                    }
-                }
+            HttpEntity<String> requestEntity = new HttpEntity<>(jsonPayload, headers);
+            RestTemplate restTemplate = new RestTemplate();
+            
+            ResponseEntity<String> responseEntity = restTemplate.postForEntity(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    requestEntity,
+                    String.class
+            );
 
-                // Parse response with Jackson
-                JsonNode root = objectMapper.readTree(response.toString());
-                return root.path("choices")
-                        .get(0)
-                        .path("message")
-                        .path("content")
-                        .asText();
+            if (responseEntity.getStatusCode().is2xxSuccessful()) {
+                JsonNode root = objectMapper.readTree(responseEntity.getBody());
+                return root.path("choices").get(0).path("message").path("content").asText();
             } else {
-                // If API throws an error, fallback gracefully
-                StringBuilder errorResponse = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    if (br != null) {
-                        while ((line = br.readLine()) != null) {
-                            errorResponse.append(line.trim());
-                        }
-                    }
-                } catch (Exception e) {
-                    errorResponse.append("Failed to read error stream.");
-                }
-                System.err.println("Groq API Error: " + responseCode + " - " + errorResponse.toString());
+                System.err.println("Groq API Error: " + responseEntity.getStatusCode());
+                return "AI assistant was unable to resolve response from Groq servers. Please verify your API key.";
             }
 
-            return "AI assistant was unable to resolve response from Groq servers. Please verify your API key.";
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            System.err.println("Groq Client Error: " + e.getResponseBodyAsString());
+            return "AI assistant was unable to resolve response from Groq servers: " + e.getStatusCode();
         } catch (Exception e) {
             e.printStackTrace();
             return "Error parsing document context for AI: " + e.getMessage();

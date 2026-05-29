@@ -28,57 +28,95 @@ public class QuizSubmissionController {
     @Autowired
     private UserRepository userRepository;
 
-    public static class SubmissionRequest {
-        private Long quizId;
-        private String answersJson;
-        private Integer score;
-        private Integer maxScore;
-
-        public Long getQuizId() { return quizId; }
-        public void setQuizId(Long quizId) { this.quizId = quizId; }
-
-        public String getAnswersJson() { return answersJson; }
-        public void setAnswersJson(String answersJson) { this.answersJson = answersJson; }
-
-        public Integer getScore() { return score; }
-        public void setScore(Integer score) { this.score = score; }
-
-        public Integer getMaxScore() { return maxScore; }
-        public void setMaxScore(Integer maxScore) { this.maxScore = maxScore; }
-    }
+    @Autowired
+    private com.forsight.service.FileUploadService fileUploadService;
 
     public static class GradeRequest {
         private Integer score;
         private String feedback;
+        private String action;
 
         public Integer getScore() { return score; }
         public void setScore(Integer score) { this.score = score; }
 
         public String getFeedback() { return feedback; }
         public void setFeedback(String feedback) { this.feedback = feedback; }
+
+        public String getAction() { return action; }
+        public void setAction(String action) { this.action = action; }
     }
 
-    @PostMapping
-    public ResponseEntity<?> submitQuiz(@RequestBody SubmissionRequest request) {
+    public static class SubmissionRequest {
+        private Long quizId;
+        private String answersJson;
+        private String answerText;
+        private String answerImageUrl;
+        private Integer score;
+        private Integer maxScore;
+
+        public Long getQuizId() { return quizId; }
+        public void setQuizId(Long quizId) { this.quizId = quizId; }
+        public String getAnswersJson() { return answersJson; }
+        public void setAnswersJson(String answersJson) { this.answersJson = answersJson; }
+        public String getAnswerText() { return answerText; }
+        public void setAnswerText(String answerText) { this.answerText = answerText; }
+        public String getAnswerImageUrl() { return answerImageUrl; }
+        public void setAnswerImageUrl(String answerImageUrl) { this.answerImageUrl = answerImageUrl; }
+        public Integer getScore() { return score; }
+        public void setScore(Integer score) { this.score = score; }
+        public Integer getMaxScore() { return maxScore; }
+        public void setMaxScore(Integer maxScore) { this.maxScore = maxScore; }
+    }
+
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<?> submitQuiz(
+            @RequestParam("quizId") Long quizId,
+            @RequestParam(value = "answersJson", required = false) String answersJson,
+            @RequestParam(value = "answerText", required = false) String answerText,
+            @RequestParam(value = "score", required = false) Integer score,
+            @RequestParam(value = "maxScore", required = false) Integer maxScore,
+            @RequestParam(value = "resubmissionNote", required = false) String resubmissionNote,
+            @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
         try {
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             User student = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
 
-            Quiz quiz = quizRepository.findById(request.getQuizId())
+            Quiz quiz = quizRepository.findById(quizId)
                     .orElseThrow(() -> new RuntimeException("Quiz not found"));
 
-            // Check if student already submitted this quiz to avoid duplicates
-            quizSubmissionRepository.findByQuizAndStudent(quiz, student)
-                    .ifPresent(qs -> { throw new RuntimeException("Quiz already submitted by you"); });
+            List<QuizSubmission> previousAttempts = quizSubmissionRepository.findByQuizAndStudent(quiz, student);
+            Integer attemptNumber = 1;
+
+            if (!previousAttempts.isEmpty()) {
+                QuizSubmission latestAttempt = previousAttempts.stream()
+                        .max(java.util.Comparator.comparing(QuizSubmission::getAttemptNumber))
+                        .orElse(null);
+
+                if (latestAttempt != null) {
+                    if (latestAttempt.getStatus().equals("PENDING") || latestAttempt.getStatus().equals("GRADED")) {
+                        throw new RuntimeException("Submission locked. Previous attempt must be marked for resubmission.");
+                    }
+                    attemptNumber = latestAttempt.getAttemptNumber() + 1;
+                }
+            }
+
+            String answerImageUrl = null;
+            if (file != null && !file.isEmpty()) {
+                answerImageUrl = fileUploadService.storeFile(file);
+            }
 
             QuizSubmission submission = QuizSubmission.builder()
                     .quiz(quiz)
                     .student(student)
-                    .answersJson(request.getAnswersJson())
-                    .score(request.getScore())
-                    .maxScore(request.getMaxScore())
+                    .answersJson(answersJson)
+                    .answerText(answerText)
+                    .answerImageUrl(answerImageUrl)
+                    .score(score)
+                    .maxScore(maxScore)
                     .status("PENDING")
+                    .attemptNumber(attemptNumber)
+                    .resubmissionNote(resubmissionNote)
                     .build();
 
             QuizSubmission savedSubmission = quizSubmissionRepository.save(submission);
@@ -124,9 +162,14 @@ public class QuizSubmissionController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only the quiz owner can grade this submission");
             }
 
-            submission.setScore(request.getScore());
-            submission.setFeedback(request.getFeedback());
-            submission.setStatus("GRADED");
+            if ("REQUEST_RESUBMISSION".equals(request.getAction())) {
+                submission.setStatus("RESUBMISSION_REQUESTED");
+                submission.setFeedback(request.getFeedback());
+            } else {
+                submission.setScore(request.getScore());
+                submission.setFeedback(request.getFeedback());
+                submission.setStatus("GRADED");
+            }
             submission.setEvaluationDate(LocalDateTime.now());
 
             QuizSubmission updatedSubmission = quizSubmissionRepository.save(submission);

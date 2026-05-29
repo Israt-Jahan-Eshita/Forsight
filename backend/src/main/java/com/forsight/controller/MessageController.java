@@ -27,12 +27,16 @@ public class MessageController {
     public static class MessageRequest {
         private Long receiverId;
         private String content;
+        private Long replyToId;
 
         public Long getReceiverId() { return receiverId; }
         public void setReceiverId(Long receiverId) { this.receiverId = receiverId; }
 
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
+
+        public Long getReplyToId() { return replyToId; }
+        public void setReplyToId(Long replyToId) { this.replyToId = replyToId; }
     }
 
     @PostMapping
@@ -50,6 +54,8 @@ public class MessageController {
                     .receiver(receiver)
                     .content(request.getContent())
                     .timestamp(LocalDateTime.now())
+                    .replyToId(request.getReplyToId())
+                    .isRead(false)
                     .build();
 
             Message savedMessage = messageRepository.save(message);

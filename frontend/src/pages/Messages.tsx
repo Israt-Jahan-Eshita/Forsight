@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { Send, Search, Users } from 'lucide-react';
+import { Send, Search, Users, Heart, Reply, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface User {
@@ -19,6 +19,9 @@ interface Message {
   receiver: User;
   content: string;
   timestamp: string;
+  read?: boolean;
+  reaction?: string;
+  replyToId?: number;
 }
 
 export function Messages() {
@@ -31,7 +34,6 @@ export function Messages() {
   const [selectedContact, setSelectedContact] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   
-  // User directory logic to search new people
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDirectory, setShowDirectory] = useState(false);
@@ -39,18 +41,20 @@ export function Messages() {
   const [newMsgContent, setNewMsgContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // New UI states
+  const [selectedMsgId, setSelectedMsgId] = useState<number | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
   useEffect(() => {
     fetchContactsAndDirectory();
   }, [token]);
 
-  // Load chat history whenever selected contact changes
   useEffect(() => {
     if (selectedContact) {
       fetchChatHistory();
     }
   }, [selectedContact, token]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -66,36 +70,22 @@ export function Messages() {
 
         setActiveContacts(mockUsers);
         setAllUsers(mockUsers);
-
-        if (targetUserFromState) {
-          setSelectedContact(targetUserFromState);
-        } else if (mockUsers.length > 0) {
-          setSelectedContact(mockUsers[0]);
-        }
+        if (targetUserFromState) setSelectedContact(targetUserFromState);
+        else if (mockUsers.length > 0) setSelectedContact(mockUsers[0]);
         return;
       }
 
-      // Fetch active contacts
-      const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', { headers: { 'Authorization': `Bearer ${token}` } });
       const contactsData: User[] = await contactsRes.json();
       setActiveContacts(contactsData);
 
-      // Fetch all system users (excluding current user)
-      const usersRes = await fetch('http://localhost:8080/api/messages/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const usersRes = await fetch('http://localhost:8080/api/messages/users', { headers: { 'Authorization': `Bearer ${token}` } });
       const usersData: User[] = await usersRes.json();
       setAllUsers(usersData);
 
-      // Pre-select target user if navigated from submissions/quizzes
       if (targetUserFromState) {
         setSelectedContact(targetUserFromState);
-        
-        // If not already in contacts, prepend temporarily
-        const exists = contactsData.some(c => c.id === targetUserFromState.id);
-        if (!exists) {
+        if (!contactsData.some(c => c.id === targetUserFromState.id)) {
           setActiveContacts([targetUserFromState, ...contactsData]);
         }
       } else if (contactsData.length > 0) {
@@ -110,32 +100,15 @@ export function Messages() {
     if (!selectedContact) return;
     try {
       if (!token || token === 'mock-jwt-token') {
-        // Fallback mock messaging
         setMessages([
-          { 
-            id: 1, 
-            sender: selectedContact, 
-            receiver: user as User, 
-            content: 'Hello! I completed the practice quiz. Can we discuss the feedback?', 
-            timestamp: new Date(Date.now() - 3600000).toISOString() 
-          },
-          { 
-            id: 2, 
-            sender: user as User, 
-            receiver: selectedContact, 
-            content: 'Sure! Let\'s go through your answers. You did great on kinematics questions.', 
-            timestamp: new Date().toISOString() 
-          }
+          { id: 1, sender: selectedContact, receiver: user as User, content: 'Hello! I completed the practice quiz.', timestamp: new Date(Date.now() - 3600000).toISOString(), read: true },
+          { id: 2, sender: user as User, receiver: selectedContact, content: 'Sure! Let\'s go through your answers.', timestamp: new Date().toISOString(), read: true }
         ]);
         return;
       }
-
-      const response = await fetch(`http://localhost:8080/api/messages/history/${selectedContact.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await fetch(`http://localhost:8080/api/messages/history/${selectedContact.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) {
-        const data = await response.json();
-        setMessages(data);
+        setMessages(await response.json());
       }
     } catch (e) {
       console.error(e);
@@ -149,7 +122,8 @@ export function Messages() {
     try {
       const payload = {
         receiverId: selectedContact.id,
-        content: newMsgContent
+        content: newMsgContent,
+        replyToId: replyingTo?.id
       };
 
       if (!token || token === 'mock-jwt-token') {
@@ -158,57 +132,54 @@ export function Messages() {
           sender: user as User,
           receiver: selectedContact,
           content: newMsgContent,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          replyToId: replyingTo?.id,
+          read: true
         };
         setMessages([...messages, mockNew]);
         setNewMsgContent('');
+        setReplyingTo(null);
         return;
       }
 
       const response = await fetch('http://localhost:8080/api/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         setNewMsgContent('');
+        setReplyingTo(null);
         fetchChatHistory();
         
-        // Refresh contact list to bubble contact to top if needed
-        const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const contactsData = await contactsRes.json();
-        setActiveContacts(contactsData);
+        const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', { headers: { 'Authorization': `Bearer ${token}` } });
+        setActiveContacts(await contactsRes.json());
       }
     } catch (e) {
       console.error(e);
     }
   };
 
+  const handleReact = async (msgId: number) => {
+    if (!token || token === 'mock-jwt-token') {
+      setMessages(messages.map(m => m.id === msgId ? { ...m, reaction: m.reaction ? undefined : '❤️' } : m));
+      return;
+    }
+    // We can add a patch endpoint later, just mock UI for now
+    setMessages(messages.map(m => m.id === msgId ? { ...m, reaction: m.reaction ? undefined : '❤️' } : m));
+  };
+
   const startNewChat = (target: User) => {
     setSelectedContact(target);
     setShowDirectory(false);
-    
-    // Add to contacts if missing
-    const exists = activeContacts.some(c => c.id === target.id);
-    if (!exists) {
-      setActiveContacts([target, ...activeContacts]);
-    }
+    if (!activeContacts.some(c => c.id === target.id)) setActiveContacts([target, ...activeContacts]);
   };
 
-  // Filter contacts/users based on search
-  const filteredContacts = activeContacts.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredContacts = activeContacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredDirectory = allUsers.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const filteredDirectory = allUsers.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getRepliedMessage = (id?: number) => messages.find(m => m.id === id);
 
   return (
     <div className="animate-fade-in pb-20 max-w-6xl mx-auto h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-6">
@@ -218,102 +189,112 @@ export function Messages() {
         <div className="p-4 border-b border-black/5 bg-color-surface/50 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-color-text font-serif">Inbox</h3>
-            <Button 
-              size="sm" 
-              variant="secondary" 
-              className={`p-1.5 rounded-xl border-none ${showDirectory ? 'bg-color-accent text-white' : 'bg-color-accent/15 text-color-accent hover:bg-color-accent/20 text-black'}`}
-              onClick={() => setShowDirectory(!showDirectory)}
-              title="Search Directory"
-            >
+            <Button size="sm" variant="secondary" className={`p-1.5 rounded-xl border-none ${showDirectory ? 'bg-color-accent text-white' : 'bg-color-accent/15 text-color-accent'}`} onClick={() => setShowDirectory(!showDirectory)}>
               <Users className="w-4 h-4" />
             </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-color-muted" />
-            <input 
-              type="text" 
-              placeholder={showDirectory ? "Search directory..." : "Search messages..."} 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 neu-inset bg-color-background rounded-xl text-xs focus:outline-none" 
-            />
+            <input type="text" placeholder={showDirectory ? "Search directory..." : "Search messages..."} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2.5 neu-inset bg-color-background rounded-xl text-xs focus:outline-none" />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {showDirectory ? (
-            // Search user directory list
             <div className="p-2 space-y-1">
               <p className="text-[10px] font-bold text-color-muted uppercase pl-2 mb-2 tracking-wide">User Directory</p>
-              {filteredDirectory.length === 0 ? (
-                <p className="text-xs text-color-muted italic p-4">No users found.</p>
-              ) : (
+              {filteredDirectory.length === 0 ? <p className="text-xs text-color-muted italic p-4">No users found.</p> : (
                 filteredDirectory.map((usr) => (
-                  <div 
-                    key={usr.id} 
-                    onClick={() => startNewChat(usr)}
-                    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-black/[0.02] transition-colors"
-                  >
+                  <div key={usr.id} onClick={() => startNewChat(usr)} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-black/[0.02]">
                     <Avatar fallback={usr.name[0]} size="sm" />
                     <div>
-                      <h4 className="text-xs font-bold text-color-text leading-tight">{usr.name}</h4>
-                      <p className="text-[10px] text-color-muted font-medium mt-0.5">{usr.role.toLowerCase()}</p>
+                      <h4 className="text-xs font-bold text-color-text">{usr.name}</h4>
+                      <p className="text-[10px] text-color-muted">{usr.role.toLowerCase()}</p>
                     </div>
                   </div>
                 ))
               )}
             </div>
           ) : (
-            // Active chats contact list
-            filteredContacts.map((chat) => (
-              <div 
-                key={chat.id} 
-                onClick={() => setSelectedContact(chat)}
-                className={`flex items-center gap-3 p-4 border-b border-black/5 cursor-pointer transition-colors hover:bg-black/[0.02] ${selectedContact?.id === chat.id ? 'bg-black/[0.03] neu-inset' : ''}`}
-              >
-                <Avatar fallback={chat.name[0]} size="md" />
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-color-text truncate leading-tight">{chat.name}</h4>
-                  <p className="text-xs text-color-muted font-medium truncate mt-1">
-                    {chat.role.toLowerCase()}
-                  </p>
+            filteredContacts.map((chat) => {
+              // Unread logic mock (just for UI demo)
+              const hasUnread = false;
+              return (
+                <div key={chat.id} onClick={() => setSelectedContact(chat)} className={`flex items-center gap-3 p-4 border-b border-black/5 cursor-pointer ${selectedContact?.id === chat.id ? 'bg-black/[0.03] neu-inset' : 'hover:bg-black/[0.02]'}`}>
+                  <div className="relative">
+                    <Avatar fallback={chat.name[0]} size="md" />
+                    {hasUnread && <div className="absolute top-0 right-0 w-3 h-3 bg-color-accent border-2 border-white rounded-full"></div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`text-sm text-color-text truncate ${hasUnread ? 'font-extrabold' : 'font-bold'}`}>{chat.name}</h4>
+                    <p className="text-xs text-color-muted font-medium truncate mt-1">{chat.role.toLowerCase()}</p>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </Card>
 
       {/* Dynamic Chat Window */}
       {selectedContact ? (
-        <Card className="flex-1 p-0 flex flex-col overflow-hidden border border-white/50 bg-color-surface/90 neu-raised">
-          {/* Active Header */}
-          <div className="p-4 border-b border-black/5 bg-color-surface/50 flex items-center gap-3">
+        <Card className="flex-1 p-0 flex flex-col overflow-hidden border border-white/50 bg-color-surface/90 neu-raised relative">
+          <div className="p-4 border-b border-black/5 bg-color-surface/50 flex items-center gap-3 z-10">
             <Avatar fallback={selectedContact.name[0]} size="sm" />
             <div>
-              <h3 className="font-bold text-color-text font-serif leading-tight">{selectedContact.name}</h3>
-              <p className="text-[10px] text-color-muted font-semibold mt-0.5">{selectedContact.role.toLowerCase()}</p>
+              <h3 className="font-bold text-color-text font-serif">{selectedContact.name}</h3>
+              <p className="text-[10px] text-color-muted font-semibold">{selectedContact.role.toLowerCase()}</p>
             </div>
           </div>
           
-          {/* Chat Bubble Stream */}
-          <div className="flex-1 overflow-y-auto p-6 bg-color-background flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto p-6 bg-color-background flex flex-col gap-4 relative">
             {messages.length === 0 ? (
               <p className="text-xs text-color-muted italic text-center mt-20">Send a message to start personal conversation.</p>
             ) : (
               messages.map((msg) => {
                 const isMine = msg.sender.email === user?.email || msg.sender.id === 999;
+                const isSelected = selectedMsgId === msg.id;
+                const repliedMsg = getRepliedMessage(msg.replyToId);
+
                 return (
-                  <div 
-                    key={msg.id} 
-                    className={`max-w-[75%] ${isMine ? 'self-end flex flex-col items-end' : 'self-start'}`}
-                  >
-                    <div className={`p-3 rounded-2xl text-xs font-semibold ${isMine ? 'rounded-tr-sm bg-color-accent text-white shadow-sm' : 'rounded-tl-sm bg-color-surface text-color-text border border-black/5 neu-raised'}`}>
+                  <div key={msg.id} className={`max-w-[75%] relative group ${isMine ? 'self-end flex flex-col items-end' : 'self-start'}`}>
+                    
+                    {/* Reply Context */}
+                    {repliedMsg && (
+                      <div className="mb-1 text-[10px] opacity-70 bg-black/5 px-3 py-1.5 rounded-lg border-l-2 border-color-accent truncate max-w-full">
+                        <span className="font-bold">{repliedMsg.sender.id === user?.id ? 'You' : repliedMsg.sender.name}:</span> {repliedMsg.content}
+                      </div>
+                    )}
+
+                    <div 
+                      onDoubleClick={() => handleReact(msg.id)}
+                      onClick={() => setSelectedMsgId(isSelected ? null : msg.id)}
+                      className={`p-3 rounded-2xl text-xs font-semibold cursor-pointer transition-all ${
+                        isMine ? 'rounded-tr-sm bg-color-accent text-black shadow-sm' : 'rounded-tl-sm bg-color-surface text-black border border-black/5 neu-raised'
+                      } ${isSelected ? 'ring-2 ring-color-accent/50' : ''}`}
+                    >
                       {msg.content}
                     </div>
-                    <span className="text-[8px] text-color-muted mt-1 px-1 font-bold">
-                      {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                    </span>
+
+                    {/* Quick Action Overlays */}
+                    <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? '-left-10' : '-right-10'}`}>
+                      <button onClick={() => setReplyingTo(msg)} className="p-1 rounded-full hover:bg-black/10 text-color-muted"><Reply className="w-3.5 h-3.5" /></button>
+                    </div>
+
+                    {/* Reactions */}
+                    {msg.reaction && (
+                      <div className={`absolute -bottom-2 bg-white border border-black/5 text-xs rounded-full px-1.5 shadow-sm ${isMine ? 'left-2' : 'right-2'}`}>
+                        {msg.reaction}
+                      </div>
+                    )}
+
+                    {/* Tap Details */}
+                    {isSelected && (
+                      <span className="text-[9px] text-color-muted mt-1.5 px-1 font-bold animate-slide-up flex items-center gap-1">
+                        {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                        {isMine && <span className="text-color-accent">• {msg.read ? 'Read' : 'Delivered'}</span>}
+                      </span>
+                    )}
                   </div>
                 );
               })
@@ -321,16 +302,28 @@ export function Messages() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Reply Bar Overlay */}
+          {replyingTo && (
+            <div className="px-4 py-2 bg-color-surface/90 backdrop-blur border-t border-black/5 flex items-center justify-between text-xs absolute bottom-[72px] left-0 right-0 z-20 animate-slide-up">
+              <div className="flex items-center gap-2 border-l-2 border-color-accent pl-2 truncate">
+                <Reply className="w-3.5 h-3.5 text-color-accent" />
+                <span className="font-bold truncate">Replying to {replyingTo.sender.id === user?.id ? 'Yourself' : replyingTo.sender.name}:</span>
+                <span className="truncate opacity-70">{replyingTo.content}</span>
+              </div>
+              <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-black/5 rounded-full"><X className="w-4 h-4 text-color-muted" /></button>
+            </div>
+          )}
+
           {/* Footer Input */}
-          <form onSubmit={handleSendMessage} className="p-4 bg-color-surface border-t border-black/5 flex items-center gap-2 shrink-0">
+          <form onSubmit={handleSendMessage} className="p-4 bg-color-surface border-t border-black/5 flex items-center gap-2 shrink-0 z-10">
             <input 
               type="text" 
-              placeholder="Type your message..." 
+              placeholder="Type a message (Double tap to react)..." 
               value={newMsgContent}
               onChange={(e) => setNewMsgContent(e.target.value)}
-              className="flex-1 neu-inset px-4 py-2.5 rounded-xl bg-color-background text-xs text-color-text focus:outline-none focus:ring-2 focus:ring-accent" 
+              className="flex-1 neu-inset px-4 py-2.5 rounded-xl bg-color-background text-xs text-color-text focus:outline-none" 
             />
-            <Button type="submit" className="rounded-xl w-10 h-10 p-0 flex items-center justify-center shrink-0 shadow-sm" disabled={!newMsgContent.trim()}>
+            <Button type="submit" className="rounded-xl w-10 h-10 p-0 flex items-center justify-center bg-color-accent text-white border-none shadow-sm" disabled={!newMsgContent.trim()}>
               <Send className="w-4 h-4" />
             </Button>
           </form>

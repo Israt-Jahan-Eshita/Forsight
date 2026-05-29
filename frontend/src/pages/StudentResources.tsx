@@ -1,44 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { FileText, Download, Play, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { FileText, Download, Eye, X, BookOpen, Clock, Lock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Badge } from '../components/ui/Badge';
+
+interface Course {
+  id: number;
+  name: string;
+  description: string;
+  className: string;
+  teacher?: { name: string; email: string; };
+}
 
 interface Resource {
   id: number;
   title: string;
   description: string;
-  className: string;
-  subject: string;
+  course?: Course;
   fileName: string;
   fileType: string;
   uploadDate: string;
-  teacher?: {
-    name: string;
-    email: string;
-  };
 }
 
 interface Quiz {
   id: number;
   title: string;
   description: string;
-  className: string;
-  subject: string;
-  questionsJson: string;
+  resource?: { id: number };
 }
 
-interface Submission {
+interface Enrollment {
   id: number;
-  quiz: {
-    id: number;
-  };
-  score: number;
-  maxScore: number;
+  course: { id: number; };
   status: string;
-  feedback: string;
 }
 
 export function StudentResources() {
@@ -49,14 +45,19 @@ export function StudentResources() {
   const [activeCategory, setActiveCategory] = useState('School');
   const [selectedClass, setSelectedClass] = useState('Class 10');
   
-  // Dynamic subjects and content
-  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  // Dynamic courses and content
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   
   const [resources, setResources] = useState<Resource[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Preview state
+  const [previewResource, setPreviewResource] = useState<{ id: number; name: string } | null>(null);
+  const [previewTimeLeft, setPreviewTimeLeft] = useState<number | null>(null);
+  const [lockModalOpen, setLockModalOpen] = useState(false);
 
   const categoriesMap: Record<string, string[]> = {
     School: Array.from({ length: 10 }, (_, i) => `Class ${i + 1}`),
@@ -65,118 +66,128 @@ export function StudentResources() {
     Masters: ['Masters']
   };
 
-  useEffect(() => {
-    // Set default class when category changes
-    const list = categoriesMap[activeCategory];
-    if (list && list.length > 0) {
-      setSelectedClass(list[0]);
-    }
-  }, [activeCategory]);
+  const location = useLocation();
 
-  // Load available subjects when class changes
   useEffect(() => {
-    fetchAvailableSubjects();
-    setSelectedSubject(null);
+    if (location.state?.targetClassName) {
+      // Find which category has this class
+      const targetClass = location.state.targetClassName;
+      for (const [category, classes] of Object.entries(categoriesMap)) {
+        if (classes.includes(targetClass)) {
+          setActiveCategory(category);
+          setSelectedClass(targetClass);
+          break;
+        }
+      }
+    } else {
+      const list = categoriesMap[activeCategory];
+      if (list && list.length > 0) {
+        setSelectedClass(list[0]);
+      }
+    }
+  }, [activeCategory, location.state]);
+
+  useEffect(() => {
+    fetchAvailableCourses();
+    setSelectedCourse(null);
     setResources([]);
     setQuizzes([]);
   }, [selectedClass, token]);
 
-  // Load materials & quizzes when subject changes
   useEffect(() => {
-    if (selectedSubject) {
-      fetchSubjectContent();
+    if (selectedCourse) {
+      fetchCourseContent();
     }
-  }, [selectedSubject, token]);
+  }, [selectedCourse, token]);
 
-  const fetchAvailableSubjects = async () => {
+  useEffect(() => {
+    let timer: any;
+    if (previewTimeLeft !== null && previewTimeLeft > 0) {
+      timer = setInterval(() => {
+        setPreviewTimeLeft(prev => prev! - 1);
+      }, 1000);
+    } else if (previewTimeLeft === 0) {
+      setPreviewResource(null);
+      setPreviewTimeLeft(null);
+      setLockModalOpen(true);
+    }
+    return () => clearInterval(timer);
+  }, [previewTimeLeft]);
+
+  const fetchAvailableCourses = async () => {
+    setLoading(true);
     try {
       if (!token || token === 'mock-jwt-token') {
-        const localRes = localStorage.getItem('fs_mock_resources');
-        const localQz = localStorage.getItem('fs_mock_quizzes');
+        const savedCourses = localStorage.getItem('fs_mock_courses');
+        if (savedCourses) {
+          const parsed = JSON.parse(savedCourses) as Course[];
+          setAvailableCourses(parsed.filter(c => c.className === selectedClass));
+        } else {
+          setAvailableCourses([]);
+        }
         
-        const resList = localRes ? JSON.parse(localRes) : [];
-        const qzList = localQz ? JSON.parse(localQz) : [];
-        
-        const resSubj = resList.filter((r: any) => r.className === selectedClass).map((r: any) => r.subject);
-        const qzSubj = qzList.filter((q: any) => q.className === selectedClass).map((q: any) => q.subject);
-        
-        const combined = Array.from(new Set([...resSubj, ...qzSubj])) as string[];
-        setAvailableSubjects(combined);
+        const savedEnrollments = localStorage.getItem('fs_mock_enrollments');
+        if (savedEnrollments) setEnrollments(JSON.parse(savedEnrollments));
         return;
       }
 
-      setLoading(true);
-      // Query distinct subjects with resources or quizzes for selected class
-      const resSubj = await fetch(`http://localhost:8080/api/resources/subjects?className=${selectedClass}`, {
+      const response = await fetch('http://localhost:8080/api/courses', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const qzSubj = await fetch(`http://localhost:8080/api/quizzes/subjects?className=${selectedClass}`, {
+      if (response.ok) {
+        const data = await response.json() as Course[];
+        const filtered = data.filter(c => c.className === selectedClass);
+        setAvailableCourses(filtered);
+        
+        if (location.state?.targetCourseId) {
+          const target = filtered.find(c => c.id === location.state.targetCourseId);
+          if (target) {
+            setSelectedCourse(target);
+          }
+        }
+      }
+
+      const enrollResponse = await fetch('http://localhost:8080/api/enrollments/student', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      let subjects: string[] = [];
-      if (resSubj.ok) {
-        const rs = await resSubj.json();
-        subjects = [...subjects, ...rs];
+      if (enrollResponse.ok) {
+        setEnrollments(await enrollResponse.json());
       }
-      if (qzSubj.ok) {
-        const qs = await qzSubj.json();
-        subjects = [...subjects, ...qs];
-      }
-
-      // Deduplicate
-      const uniqueSubjects = Array.from(new Set(subjects));
-      setAvailableSubjects(uniqueSubjects);
     } catch (e) {
       console.error(e);
-      setAvailableSubjects(['Physics', 'Biology']); // Mock fallback
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSubjectContent = async () => {
+  const fetchCourseContent = async () => {
+    if (!selectedCourse) return;
+    setLoading(true);
     try {
       if (!token || token === 'mock-jwt-token') {
-        const localRes = localStorage.getItem('fs_mock_resources');
-        const localQz = localStorage.getItem('fs_mock_quizzes');
-        const localSub = localStorage.getItem('fs_mock_submissions');
-        
-        const resList = localRes ? JSON.parse(localRes) : [];
-        const qzList = localQz ? JSON.parse(localQz) : [];
-        const subList = localSub ? JSON.parse(localSub) : [];
-        
-        const matchedRes = resList.filter((r: any) => r.className === selectedClass && r.subject === selectedSubject);
-        const matchedQz = qzList.filter((q: any) => q.className === selectedClass && q.subject === selectedSubject);
-        
-        setResources(matchedRes);
-        setQuizzes(matchedQz);
-        setSubmissions(subList);
+        const savedRes = localStorage.getItem('fs_mock_resources');
+        if (savedRes) {
+          const parsed = JSON.parse(savedRes) as Resource[];
+          setResources(parsed.filter(r => r.course?.id === selectedCourse.id));
+        }
+        const savedQuiz = localStorage.getItem('fs_mock_quizzes');
+        if (savedQuiz) setQuizzes(JSON.parse(savedQuiz));
         return;
       }
 
-      setLoading(true);
-      // Fetch dynamic materials
-      const resResponse = await fetch(`http://localhost:8080/api/resources?className=${selectedClass}&subject=${selectedSubject}`, {
+      const resResponse = await fetch(`http://localhost:8080/api/resources?courseId=${selectedCourse.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const resData = await resResponse.json();
-      setResources(resData);
+      if (resResponse.ok) {
+        setResources(await resResponse.json());
+      }
 
-      // Fetch dynamic quizzes
-      const qzResponse = await fetch(`http://localhost:8080/api/quizzes?className=${selectedClass}&subject=${selectedSubject}`, {
+      const quizResponse = await fetch('http://localhost:8080/api/quizzes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const qzData = await qzResponse.json();
-      setQuizzes(qzData);
-
-      // Fetch student submissions
-      const subResponse = await fetch('http://localhost:8080/api/submissions', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const subData = await subResponse.json();
-      setSubmissions(subData);
-
+      if (quizResponse.ok) {
+        setQuizzes(await quizResponse.json());
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -192,11 +203,48 @@ export function StudentResources() {
     window.open(`http://localhost:8080/api/resources/${id}/download?access_token=${token}`, '_blank');
   };
 
-  const getQuizState = (quizId: number) => {
-    const sub = submissions.find(s => s.quiz.id === quizId);
-    if (!sub) return { label: 'Take Practice Quiz', variant: 'primary', icon: Play };
-    if (sub.status === 'PENDING') return { label: 'Awaiting Evaluation', variant: 'secondary', icon: AlertCircle };
-    return { label: `Graded: ${sub.score}/${sub.maxScore}`, variant: 'success', icon: CheckCircle2 };
+  const handleEnroll = async (courseId: number) => {
+    if (!token || token === 'mock-jwt-token') {
+      const mockEnroll: Enrollment = {
+        id: Date.now(),
+        course: { id: courseId },
+        status: 'Enrolled'
+      };
+      const updated = [...enrollments, mockEnroll];
+      localStorage.setItem('fs_mock_enrollments', JSON.stringify(updated));
+      setEnrollments(updated);
+      alert('Enrolled successfully in preview mode!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/enrollments/${courseId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEnrollments([...enrollments, data]);
+      } else {
+        alert('Failed to enroll.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error during enrollment.');
+    }
+  };
+
+  const handlePreview = (res: Resource) => {
+    const isEnrolled = enrollments.some(e => e.course?.id === selectedCourse?.id);
+    setPreviewResource({ id: res.id, name: res.fileName });
+    if (!isEnrolled) {
+      setPreviewTimeLeft(15);
+    } else {
+      setPreviewTimeLeft(null);
+    }
   };
 
   return (
@@ -206,7 +254,7 @@ export function StudentResources() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-color-text font-serif">Resource Shelf</h1>
-          <p className="text-color-muted mt-1 text-sm">Select your class level, check available subjects, study, and take practice assessments.</p>
+          <p className="text-color-muted mt-1 text-sm">Select your class level, browse courses, and access materials.</p>
         </div>
 
         <div className="flex bg-color-surface p-1 rounded-xl neu-inset gap-1 shrink-0 w-full md:w-auto overflow-x-auto">
@@ -237,127 +285,213 @@ export function StudentResources() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* Dynamic Subjects Drawer */}
+        {/* Dynamic Courses Drawer */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-lg font-bold font-serif text-color-text">Available Subjects</h3>
-          {loading && availableSubjects.length === 0 ? (
-            <p className="text-xs text-color-muted animate-pulse">Loading active subjects...</p>
-          ) : availableSubjects.length === 0 ? (
+          <h3 className="text-lg font-bold font-serif text-color-text">Available Courses</h3>
+          {loading && availableCourses.length === 0 ? (
+            <p className="text-xs text-color-muted animate-pulse">Loading courses...</p>
+          ) : availableCourses.length === 0 ? (
             <Card className="p-6 text-center text-xs text-color-muted font-medium neu-raised bg-color-surface/50">
-              No subjects have resources uploaded by teachers for {selectedClass} yet.
+              No courses found for {selectedClass} yet.
             </Card>
           ) : (
             <div className="flex flex-col gap-3">
-              {availableSubjects.map((sub) => (
-                <Card
-                  key={sub}
-                  onClick={() => setSelectedSubject(sub)}
-                  className={`p-4 cursor-pointer transition-all border font-serif font-bold text-center select-none ${selectedSubject === sub ? 'neu-inset border-color-accent text-color-accent' : 'neu-raised hover:bg-black/[0.01] text-color-text'}`}
-                >
-                  {sub}
-                </Card>
-              ))}
+              {availableCourses.map((course) => {
+                const isEnrolled = enrollments.some(e => e.course?.id === course.id);
+                return (
+                  <Card
+                    key={course.id}
+                    onClick={() => setSelectedCourse(course)}
+                    className={`p-4 cursor-pointer transition-all border text-left select-none ${selectedCourse?.id === course.id ? 'neu-inset border-color-accent' : 'neu-raised hover:bg-black/[0.01]'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className={`font-bold font-serif ${selectedCourse?.id === course.id ? 'text-color-accent' : 'text-color-text'}`}>
+                        {course.name}
+                      </h4>
+                      {isEnrolled && <Badge variant="success" className="text-[9px]">Enrolled</Badge>}
+                    </div>
+                    <p className="text-[10px] text-color-muted mt-1 line-clamp-1">{course.description}</p>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Dynamic Main Materials Grid */}
         <div className="lg:col-span-3 space-y-8">
-          {!selectedSubject ? (
+          {!selectedCourse ? (
             <Card className="h-80 flex flex-col items-center justify-center p-8 text-center text-color-muted bg-color-surface/40 neu-raised">
-              <FileText className="w-16 h-16 mb-4 text-color-accent opacity-20" />
-              <h4 className="font-bold text-lg font-serif">Awaiting Subject Selection</h4>
-              <p className="text-sm opacity-70 mt-1 max-w-sm">Please choose one of the available subjects from the sidebar to review resources and quizzes.</p>
+              <BookOpen className="w-16 h-16 mb-4 text-color-accent opacity-20" />
+              <h4 className="font-bold text-lg font-serif">Awaiting Course Selection</h4>
+              <p className="text-sm opacity-70 mt-1 max-w-sm">Please choose one of the available courses from the sidebar to review resources.</p>
             </Card>
           ) : (
-            <div className="space-y-8 animate-slide-up">
+            <div className="space-y-6 animate-slide-up">
               
-              {/* Learning Shelf */}
-              <section className="space-y-4">
-                <h2 className="text-2xl font-bold font-serif text-color-text border-b border-black/5 pb-2">
-                  Learning Shelf • {selectedSubject}
-                </h2>
-                {resources.length === 0 ? (
-                  <p className="text-sm text-color-muted italic">No study guides or resources uploaded for this topic.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {resources.map((res) => (
-                      <Card key={res.id} className="p-5 flex flex-col justify-between neu-raised border border-white/50 bg-color-surface/90">
-                        <div>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/5 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-serif text-color-text">
+                    {selectedCourse.name}
+                  </h2>
+                  <p className="text-sm text-color-muted mt-1">{selectedCourse.description}</p>
+                </div>
+                {!enrollments.some(e => e.course?.id === selectedCourse.id) && (
+                  <Button onClick={() => handleEnroll(selectedCourse.id)} className="font-bold shadow-md shrink-0">
+                    Enroll in Course
+                  </Button>
+                )}
+              </div>
+
+              {resources.length === 0 ? (
+                <p className="text-sm text-color-muted italic">No study materials uploaded for this course.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {resources.map((res) => {
+                    const isEnrolled = enrollments.some(e => e.course?.id === selectedCourse.id);
+                    const resourceQuizzes = quizzes.filter(q => q.resource?.id === res.id);
+                    
+                    return (
+                    <Card key={res.id} className="p-5 flex flex-col justify-between neu-raised border border-white/50 bg-color-surface/90">
+                      <div>
+                        <div className="flex justify-between items-start">
                           <div className="w-12 h-12 neu-inset bg-color-surface flex items-center justify-center rounded-xl text-color-accent mb-4">
                             <FileText className="w-6 h-6" />
                           </div>
-                          <h3 className="font-bold text-color-text text-lg leading-tight mb-1">{res.title}</h3>
-                          <p className="text-xs text-color-muted font-medium mb-3">{res.description || 'No summary text.'}</p>
-                          
-                          {res.teacher && (
-                            <div className="mt-4 p-3 bg-color-background rounded-xl neu-inset text-[10px] space-y-0.5">
-                              <p className="font-bold text-color-muted uppercase tracking-wider">Uploading Instructor</p>
-                              <p className="font-bold text-color-text text-xs mt-0.5">{res.teacher.name}</p>
-                              <p className="text-color-muted">{res.teacher.email}</p>
-                            </div>
-                          )}
                         </div>
+                        <h3 className="font-bold text-color-text text-lg leading-tight mb-1">{res.title}</h3>
+                        <p className="text-xs text-color-muted font-medium mb-3">{res.description || 'No summary text.'}</p>
+                      </div>
 
-                        <div className="flex gap-2 mt-6 pt-4 border-t border-black/5">
+                      <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-black/5">
+                        {isEnrolled ? (
+                          <>
+                            <Button 
+                              variant="primary" 
+                              className="w-full text-xs py-2 h-9 font-bold" 
+                              onClick={() => navigate('/ask-ai', { state: { resourceId: res.id, fileName: res.fileName } })}
+                            >
+                              AI Assistant & Notes
+                            </Button>
+                            {resourceQuizzes.length > 0 && (
+                              <select 
+                                className="w-full text-xs px-3 h-9 font-bold border-2 border-color-accent text-color-accent bg-transparent rounded-xl cursor-pointer focus:outline-none"
+                                onChange={(e) => {
+                                  if (e.target.value) navigate('/quizzes', { state: { quizId: parseInt(e.target.value) } })
+                                }}
+                              >
+                                <option value="" disabled selected hidden>Practice Quiz ({resourceQuizzes.length})</option>
+                                {resourceQuizzes.map(q => <option key={q.id} value={q.id}>{q.title}</option>)}
+                              </select>
+                            )}
+                          </>
+                        ) : (
+                          <div className="w-full p-2 bg-color-surface neu-inset rounded-lg text-center text-[10px] text-color-muted font-bold flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> Enroll to unlock Quizzes & AI
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2 w-full">
                           <Button 
-                            variant="primary" 
-                            className="flex-1 text-xs py-2 h-9 font-bold" 
-                            onClick={() => navigate('/ask-ai', { state: { resourceId: res.id, fileName: res.fileName } })}
+                            variant="secondary" 
+                            className="flex-1 px-3 h-9 flex items-center justify-center gap-2"
+                            onClick={() => handlePreview(res)}
+                            title="Preview Study Document"
                           >
-                            AI Study Assistant
+                            <Eye className="w-4 h-4" /> Preview
                           </Button>
                           <Button 
                             variant="secondary" 
-                            className="px-3 h-9"
-                            onClick={() => handleDownload(res.id, res.fileName)}
+                            className="flex-1 px-3 h-9 flex items-center justify-center gap-2"
+                            onClick={() => {
+                              if (!isEnrolled) {
+                                alert("Please enroll in the course to download materials.");
+                              } else {
+                                handleDownload(res.id, res.fileName);
+                              }
+                            }}
                             title="Download Study Document"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-4 h-4" /> Download
                           </Button>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Practice Quizzes Shelf */}
-              <section className="space-y-4 pt-4">
-                <h2 className="text-2xl font-bold font-serif text-color-text border-b border-black/5 pb-2">
-                  Practice Assessments
-                </h2>
-                {quizzes.length === 0 ? (
-                  <p className="text-sm text-color-muted italic">No practice quizzes published for this subject.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {quizzes.map((qz) => {
-                      const qState = getQuizState(qz.id);
-                      return (
-                        <Card key={qz.id} className="p-5 flex flex-col justify-between neu-raised border border-white/50 bg-color-surface">
-                          <div>
-                            <h3 className="font-bold text-color-text text-lg leading-tight mb-1">{qz.title}</h3>
-                            <p className="text-xs text-color-muted mb-4">{qz.description || 'Interactive evaluation practice.'}</p>
-                          </div>
-
-                          <Button 
-                            variant={qState.variant as any} 
-                            onClick={() => navigate('/quizzes', { state: { quizId: qz.id } })}
-                            className="w-full flex items-center justify-center gap-2 h-10 mt-4 font-bold"
-                          >
-                            <qState.icon className="w-4 h-4" /> {qState.label}
-                          </Button>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-
+                      </div>
+                    </Card>
+                  )})}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Floating Message Teacher Icon */}
+      <button 
+        onClick={() => navigate('/messages')}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-color-accent text-white rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.2)] hover:scale-110 transition-transform z-50 neu-raised"
+        title="Message Teacher"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </button>
+
+      {/* Preview Modal */}
+      {previewResource && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-color-surface w-full max-w-5xl h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden relative animate-scale-in">
+            <div className="flex items-center justify-between p-4 border-b border-black/10">
+              <div className="flex items-center gap-4">
+                <h3 className="font-bold text-lg font-serif">Preview: {previewResource.name}</h3>
+                {previewTimeLeft !== null && (
+                  <Badge variant="danger" className="animate-pulse flex items-center gap-1.5 px-3 py-1 text-sm font-bold tracking-widest bg-color-danger text-white border-none shadow-md">
+                    <Clock className="w-4 h-4" /> {previewTimeLeft}s
+                  </Badge>
+                )}
+              </div>
+              <button onClick={() => { setPreviewResource(null); setPreviewTimeLeft(null); }} className="p-2 bg-black/5 hover:bg-color-danger/10 text-color-text hover:text-color-danger rounded-xl transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 w-full bg-color-background overflow-hidden relative p-4">
+              <iframe 
+                src={token && token !== 'mock-jwt-token' ? `http://localhost:8080/api/resources/${previewResource.id}/view?access_token=${token}` : ''}
+                className="w-full h-full border-0 rounded-xl bg-white shadow-inner"
+                title={previewResource.name}
+              />
+              {(!token || token === 'mock-jwt-token') && (
+                 <div className="absolute inset-0 flex items-center justify-center text-color-muted">Preview not available in mock mode.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lock Modal */}
+      {lockModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+          <Card className="max-w-md w-full p-8 text-center flex flex-col items-center neu-raised shadow-2xl scale-105 border-2 border-color-accent">
+            <div className="w-16 h-16 bg-color-accent/10 rounded-full flex items-center justify-center text-color-accent mb-4">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-bold font-serif mb-2">Preview Time Expired</h3>
+            <p className="text-sm text-color-muted mb-6">
+              Your 15-second preview has ended. Please enroll in the course to unlock unlimited access, quizzes, and AI features.
+            </p>
+            <div className="flex items-center gap-3 w-full">
+              <Button variant="secondary" className="flex-1 font-bold" onClick={() => setLockModalOpen(false)}>Close</Button>
+              <Button 
+                variant="primary" 
+                className="flex-1 font-bold" 
+                onClick={() => {
+                  if (selectedCourse) handleEnroll(selectedCourse.id);
+                  setLockModalOpen(false);
+                }}
+              >
+                Enroll Now
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

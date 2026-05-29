@@ -12,7 +12,7 @@
   --color-success: #6BCB77;
   --color-warning: #FFD166;
   
-  --font-sans: 'DM Sans', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-serif: 'Playfair Display', serif;
   
   --spacing-base: 16px;
@@ -34,21 +34,22 @@
     --color-critical: #C1121F;
     --color-success: #6BCB77;
     --color-warning: #FFD166;
-    --shadow-light: rgba(255, 255, 255, 0.9);
-    --shadow-dark: rgba(174, 169, 198, 0.4);
+    --shadow-light: rgba(255, 255, 255, 1);
+    --shadow-dark: rgba(160, 155, 185, 0.3);
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     margin: 0;
     padding: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-sans);
+    letter-spacing: -0.025em;
   }
 }
 
@@ -149,4 +150,17 @@
       inset -2px -2px 4px var(--shadow-light);
     transform: scale(0.98);
   }
+
+  /* Typewriter animation utility */
+  .typewriter-text {
+    display: inline-block;
+    overflow: hidden;
+    white-space: pre-wrap;
+    animation: typing 2s steps(40, end);
+  }
+}
+
+@keyframes typing {
+  from { max-width: 0 }
+  to { max-width: 100% }
 }
