@@ -58,14 +58,10 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Real-time Alerts (WebSocket & Kafka) -->
+        <!-- Real-time Alerts (WebSocket) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
         </dependency>
 
         <!-- Utilities -->

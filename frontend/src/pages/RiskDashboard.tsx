@@ -14,6 +14,7 @@ interface StudentRisk {
   status: 'Safe' | 'Watch' | 'At-Risk' | 'Critical';
   riskScore: number;
   courseName: string;
+  behavioralFlags?: string[];
 }
 
 export function RiskDashboard() {
@@ -188,6 +189,15 @@ export function RiskDashboard() {
                 </span>
                 <span className="text-[10px] font-bold text-color-muted">Risk {student.riskScore}%</span>
               </div>
+              {student.behavioralFlags && student.behavioralFlags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {student.behavioralFlags.map(flag => (
+                    <span key={flag} className="px-2 py-0.5 rounded bg-black/5 text-[9px] font-bold text-color-muted uppercase">
+                      {flag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         ))}

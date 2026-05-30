@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles, ArrowUpRight, Activity, Users, ShieldAlert, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import ReactMarkdown from 'react-markdown';
 
 interface Chronicle {
   courseId: number;
@@ -141,15 +142,7 @@ export function TeacherDashboard() {
 
   const studentList = Object.values(groupedStudents);
 
-  const engagementData = [
-    { day: 'Mon', engagement: 65, avgScore: 70 },
-    { day: 'Tue', engagement: 72, avgScore: 71 },
-    { day: 'Wed', engagement: 85, avgScore: 75 },
-    { day: 'Thu', engagement: 81, avgScore: 78 },
-    { day: 'Fri', engagement: 92, avgScore: 82 },
-    { day: 'Sat', engagement: 96, avgScore: 85 },
-    { day: 'Sun', engagement: 99, avgScore: 88 },
-  ];
+  // No more mock engagementData needed
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-6">
@@ -246,7 +239,9 @@ export function TeacherDashboard() {
                         Groq Llama-3.1 is analyzing student data...
                       </div>
                     ) : opEdText ? (
-                      <p className="text-lg text-color-text/90 leading-relaxed italic typewriter-text">"{opEdText}"</p>
+                      <div className="text-lg text-color-text/90 leading-relaxed italic typewriter-text prose prose-sm max-w-none">
+                        <ReactMarkdown>{opEdText}</ReactMarkdown>
+                      </div>
                     ) : (
                       <p className="text-color-muted italic">Click to generate a real-time risk analysis for your classroom.</p>
                     )}
@@ -262,7 +257,7 @@ export function TeacherDashboard() {
                   </div>
                   <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={engagementTrend.length > 0 ? engagementTrend : engagementData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <AreaChart data={engagementTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.4}/>
