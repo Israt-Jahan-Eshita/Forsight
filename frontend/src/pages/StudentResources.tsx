@@ -80,13 +80,15 @@ export function StudentResources() {
           break;
         }
       }
+      // Clear the state so it doesn't lock the UI when the user clicks other tabs
+      window.history.replaceState({}, document.title)
     } else {
       const list = categoriesMap[activeCategory];
       if (list && list.length > 0) {
         setSelectedClass(list[0]);
       }
     }
-  }, [activeCategory, location.state]);
+  }, [activeCategory]);
 
   useEffect(() => {
     fetchAvailableCourses();
