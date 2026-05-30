@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -40,7 +41,7 @@ export function ChatBot() {
 
     try {
       const historyStr = messages.map(m => m.sender + ": " + m.text).join("\n");
-      const response = await fetch('http://localhost:8080/api/ai/general-chat', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/general-chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

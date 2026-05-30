@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -49,7 +50,7 @@ export function StudentSubmissions() {
       if (!token || token === 'mock-jwt-token') {
         return;
       }
-      const res = await fetch('http://localhost:8080/api/submissions', {
+      const res = await fetch(`${API_BASE_URL}/api/submissions`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -133,7 +134,7 @@ export function StudentSubmissions() {
     if (answerImage) formData.append('file', answerImage);
     
     try {
-      const response = await fetch('http://localhost:8080/api/submissions', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -219,7 +220,7 @@ export function StudentSubmissions() {
                   <p className="text-[10px] text-color-muted mt-2">Attempt #{sub.attemptNumber || 1}</p>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                  <Badge variant="secondary">PENDING (LOCKED)</Badge>
+                  <Badge variant="default">PENDING (LOCKED)</Badge>
                 </div>
               </Card>
             ))}
@@ -245,7 +246,7 @@ export function StudentSubmissions() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <h3 className="font-bold text-lg text-color-text leading-tight">{sub.quiz.title}</h3>
-                    {isPastAttempt && <Badge variant="secondary" className="text-[10px]">PREVIOUS ATTEMPT</Badge>}
+                    {isPastAttempt && <Badge variant="default" className="text-[10px]">PREVIOUS ATTEMPT</Badge>}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-color-muted font-bold">{sub.quiz.course?.name || 'General'}</span>
@@ -271,7 +272,7 @@ export function StudentSubmissions() {
                       <span className="font-bold block text-color-muted text-xs uppercase">Submitted Work:</span>
                       {sub.answerText && <p className="whitespace-pre-wrap">{sub.answerText}</p>}
                       {sub.answerImageUrl && (
-                        <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `http://localhost:8080${sub.answerImageUrl}`} alt="Submission file" className="max-w-[200px] rounded border border-black/10 mt-2" />
+                        <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `${API_BASE_URL}${sub.answerImageUrl}`} alt="Submission file" className="max-w-[200px] rounded border border-black/10 mt-2" />
                       )}
                     </div>
                   )}

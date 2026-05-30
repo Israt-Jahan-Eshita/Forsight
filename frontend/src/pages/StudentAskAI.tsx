@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -85,7 +86,7 @@ export function StudentAskAI() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/resources', {
+      const response = await fetch(`${API_BASE_URL}/api/resources`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -133,7 +134,7 @@ export function StudentAskAI() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/ai/notes', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +192,7 @@ export function StudentAskAI() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/ai/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

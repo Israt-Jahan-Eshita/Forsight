@@ -50,12 +50,18 @@ public class QuizSubmission {
     @Column(name = "submission_date")
     private LocalDateTime submissionDate = LocalDateTime.now();
 
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+
+    @Column(name = "resource_opened")
+    private Boolean resourceOpened = false;
+
     // Constructors
     public QuizSubmission() {
         this.submissionDate = LocalDateTime.now();
     }
 
-    public QuizSubmission(Long id, Quiz quiz, User student, String answersJson, String answerText, String answerImageUrl, Integer score, Integer maxScore, String status, String feedback, LocalDateTime evaluationDate, Integer attemptNumber, String resubmissionNote) {
+    public QuizSubmission(Long id, Quiz quiz, User student, String answersJson, String answerText, String answerImageUrl, Integer score, Integer maxScore, String status, String feedback, LocalDateTime evaluationDate, Integer attemptNumber, String resubmissionNote, LocalDateTime startTime, Boolean resourceOpened) {
         this.id = id;
         this.quiz = quiz;
         this.student = student;
@@ -69,6 +75,8 @@ public class QuizSubmission {
         this.evaluationDate = evaluationDate;
         this.attemptNumber = attemptNumber != null ? attemptNumber : 1;
         this.resubmissionNote = resubmissionNote;
+        this.startTime = startTime;
+        this.resourceOpened = resourceOpened != null ? resourceOpened : false;
         this.submissionDate = LocalDateTime.now();
     }
 
@@ -115,6 +123,12 @@ public class QuizSubmission {
     public LocalDateTime getSubmissionDate() { return submissionDate; }
     public void setSubmissionDate(LocalDateTime submissionDate) { this.submissionDate = submissionDate; }
 
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public Boolean getResourceOpened() { return resourceOpened; }
+    public void setResourceOpened(Boolean resourceOpened) { this.resourceOpened = resourceOpened; }
+
     // Builder
     public static QuizSubmissionBuilder builder() {
         return new QuizSubmissionBuilder();
@@ -134,6 +148,8 @@ public class QuizSubmission {
         private LocalDateTime evaluationDate;
         private Integer attemptNumber = 1;
         private String resubmissionNote;
+        private LocalDateTime startTime;
+        private Boolean resourceOpened = false;
         private LocalDateTime submissionDate = LocalDateTime.now();
 
         public QuizSubmissionBuilder id(Long id) { this.id = id; return this; }
@@ -149,10 +165,12 @@ public class QuizSubmission {
         public QuizSubmissionBuilder evaluationDate(LocalDateTime evaluationDate) { this.evaluationDate = evaluationDate; return this; }
         public QuizSubmissionBuilder attemptNumber(Integer attemptNumber) { this.attemptNumber = attemptNumber; return this; }
         public QuizSubmissionBuilder resubmissionNote(String resubmissionNote) { this.resubmissionNote = resubmissionNote; return this; }
+        public QuizSubmissionBuilder startTime(LocalDateTime startTime) { this.startTime = startTime; return this; }
+        public QuizSubmissionBuilder resourceOpened(Boolean resourceOpened) { this.resourceOpened = resourceOpened; return this; }
         public QuizSubmissionBuilder submissionDate(LocalDateTime submissionDate) { this.submissionDate = submissionDate; return this; }
 
         public QuizSubmission build() {
-            QuizSubmission q = new QuizSubmission(id, quiz, student, answersJson, answerText, answerImageUrl, score, maxScore, status, feedback, evaluationDate, attemptNumber, resubmissionNote);
+            QuizSubmission q = new QuizSubmission(id, quiz, student, answersJson, answerText, answerImageUrl, score, maxScore, status, feedback, evaluationDate, attemptNumber, resubmissionNote, startTime, resourceOpened);
             q.setSubmissionDate(this.submissionDate != null ? this.submissionDate : LocalDateTime.now());
             return q;
         }

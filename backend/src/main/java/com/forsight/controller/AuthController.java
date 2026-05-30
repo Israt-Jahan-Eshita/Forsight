@@ -92,4 +92,81 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token, rawPassword, savedUser));
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody java.util.Map<String, String> request) {
+        try {
+            String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+            String oldPassword = request.get("oldPassword");
+            String newPassword = request.get("newPassword");
+            String avatarUrl = request.get("avatarUrl");
+
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                user.setAvatarUrl(avatarUrl);
+            }
+
+            if (oldPassword != null && !oldPassword.isEmpty() && newPassword != null && !newPassword.isEmpty()) {
+                if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Incorrect old password");
+                }
+                user.setPassword(passwordEncoder.encode(newPassword));
+            }
+
+            userRepository.save(user);
+
+            // Also return the updated user in response if needed
+            return ResponseEntity.ok(java.util.Map.of("message", "Profile updated successfully", "avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : ""));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/profile/picture")
+    public ResponseEntity<?> uploadProfilePicture(@org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (file.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
+            }
+
+            // Ensure uploads directory exists
+            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads");
+            if (!java.nio.file.Files.exists(uploadDir)) {
+                java.nio.file.Files.createDirectories(uploadDir);
+            }
+
+            // Save file
+            String filename = user.getId() + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9.-]", "_");
+            java.nio.file.Path filePath = uploadDir.resolve(filename);
+            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            // Update user
+            String avatarUrl = "/uploads/" + filename;
+            user.setAvatarUrl(avatarUrl);
+            userRepository.save(user);
+
+            return ResponseEntity.ok(java.util.Map.of("message", "Profile picture updated successfully", "avatarUrl", avatarUrl));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/profile/picture")
+    public ResponseEntity<?> deleteProfilePicture() {
+        try {
+            String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+            user.setAvatarUrl(null);
+            userRepository.save(user);
+
+            return ResponseEntity.ok(java.util.Map.of("message", "Profile picture removed successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }

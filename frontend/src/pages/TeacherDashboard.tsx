@@ -1,12 +1,12 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { ProgressBar } from '../components/ui/ProgressBar';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, Calendar, ArrowUpRight, Activity, Users, Bot, TrendingUp } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Sparkles, ArrowUpRight, Activity, Users, ShieldAlert, TrendingUp } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Chronicle {
   courseId: number;
@@ -47,20 +47,23 @@ export function TeacherDashboard() {
   const [submissions, setSubmissions] = useState<QuizSubmission[]>([]);
   const [selectedChronicle, setSelectedChronicle] = useState<Chronicle | null>(null);
   const [showBriefings, setShowBriefings] = useState(false);
-  const [showTelegram, setShowTelegram] = useState(false);
+
 
   // Dynamic Data State
-  const [logs, setLogs] = useState<any[]>([]);
   const [healthScore, setHealthScore] = useState<{ healthScore: number, status: string } | null>(null);
   const [opEdText, setOpEdText] = useState('');
   const [generatingOpEd, setGeneratingOpEd] = useState(false);
+  const [engagementTrend, setEngagementTrend] = useState<any[]>([]);
+
+  // Widget Modal State
+  const [activeWidget, setActiveWidget] = useState<'health' | 'ai' | 'trend' | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const [chronResponse, subResponse] = await Promise.all([
-          fetch('http://localhost:8080/api/enrollments/teacher/chronicle', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://localhost:8080/api/submissions', { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${API_BASE_URL}/api/enrollments/teacher/chronicle`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE_URL}/api/submissions`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
         if (chronResponse.ok) {
@@ -82,11 +85,12 @@ export function TeacherDashboard() {
 
   const fetchLogsAndHealth = async () => {
     try {
-      const logsRes = await fetch('http://localhost:8080/api/logs/recent', { headers: { 'Authorization': `Bearer ${token}` } });
-      if (logsRes.ok) setLogs(await logsRes.json());
 
-      const healthRes = await fetch('http://localhost:8080/api/analytics/classroom-health', { headers: { 'Authorization': `Bearer ${token}` } });
+      const healthRes = await fetch(`${API_BASE_URL}/api/analytics/classroom-health`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (healthRes.ok) setHealthScore(await healthRes.json());
+      
+      const engagementRes = await fetch(`${API_BASE_URL}/api/analytics/engagement-trend`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (engagementRes.ok) setEngagementTrend(await engagementRes.json());
     } catch (e) {
       console.error(e);
     }
@@ -96,7 +100,7 @@ export function TeacherDashboard() {
     if (opEdText || generatingOpEd) return;
     setGeneratingOpEd(true);
     try {
-      const response = await fetch('http://localhost:8080/api/ai/generate-oped', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate-oped`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -154,7 +158,7 @@ export function TeacherDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 pb-4 mb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-color-text font-serif italic tracking-tight">
-            My Students
+            Teacher Dashboard
           </h1>
           <div className="flex items-center gap-2 text-xs text-color-muted font-mono uppercase mt-1">
             <span className="flex items-center gap-1 font-bold">
@@ -163,107 +167,140 @@ export function TeacherDashboard() {
           </div>
         </div>
         
-        {/* Clickable Quick Action Popup Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button 
-            onClick={() => setShowBriefings(!showBriefings)}
-            variant={showBriefings ? 'primary' : 'secondary'}
-            className="text-xs py-2 px-4 gap-1.5 flex items-center font-bold rounded-xl cursor-pointer transition-all"
-          >
-            <Bot className="w-3.5 h-3.5" /> AI Briefing
-          </Button>
-          <Button 
-            onClick={() => navigate('/teacher/risk-dashboard')}
-            className="neu-raised text-xs py-2 px-4 gap-1.5 flex items-center bg-color-accent text-white font-bold rounded-xl cursor-pointer transition-all hover:brightness-105 active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5" /> Risk Dashboard
-          </Button>
-        </div>
+        {/* Action Button Removed from header, now in FABs */}
       </div>
 
-      {/* AI Risk Analysis & Classroom Health */}
-      {(showBriefings || healthScore) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
-          
-          {/* Health Score Card */}
-          <Card className="p-6 bg-color-surface border border-white/50 neu-raised relative overflow-hidden flex flex-col justify-center items-center text-center">
-            <div className={`absolute top-0 w-full h-1 ${healthScore?.healthScore && healthScore.healthScore >= 70 ? 'bg-color-success' : 'bg-color-warning'}`} />
-            <Activity className="w-6 h-6 mb-3 text-color-muted" />
-            <h3 className="text-sm font-bold text-color-muted uppercase tracking-widest mb-1">Classroom Health</h3>
-            <div className="text-4xl font-black font-serif text-color-text my-2">
-              {healthScore ? `${healthScore.healthScore}%` : '...'}
-            </div>
-            <Badge variant={healthScore?.healthScore && healthScore.healthScore >= 70 ? 'success' : 'warning'}>
-              {healthScore?.status || 'Analyzing'}
-            </Badge>
-          </Card>
+      {/* Floating Action Bar for Widgets */}
+      <div className="fixed right-6 top-1/3 flex flex-col gap-4 z-40 animate-fade-in">
+        <Button 
+          variant="icon"
+          onClick={() => setActiveWidget('health')}
+          className="w-12 h-12 rounded-full neu-raised bg-color-surface flex items-center justify-center text-color-text hover:text-color-accent group relative"
+        >
+          <Activity className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span className="absolute right-full mr-4 bg-color-surface neu-inset px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Classroom Health
+          </span>
+        </Button>
+        <Button 
+          variant="icon"
+          onClick={() => setShowBriefings(true)}
+          className="w-12 h-12 rounded-full neu-raised bg-color-surface flex items-center justify-center text-color-text hover:text-color-accent group relative"
+        >
+          <ShieldAlert className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span className="absolute right-full mr-4 bg-color-surface neu-inset px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            AI Risk Analysis
+          </span>
+        </Button>
+        <Button 
+          variant="icon"
+          onClick={() => setActiveWidget('trend')}
+          className="w-12 h-12 rounded-full neu-raised bg-color-surface flex items-center justify-center text-color-text hover:text-color-accent group relative"
+        >
+          <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span className="absolute right-full mr-4 bg-color-surface neu-inset px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Engagement Trend
+          </span>
+        </Button>
+      </div>
 
-          {/* AI Briefing / Op-Ed Card */}
-          <Card className="md:col-span-2 p-6 bg-color-surface border border-white/50 neu-raised flex flex-col">
-            <div className="flex items-center gap-2 mb-4 border-b border-black/5 pb-3">
-              <Bot className="w-5 h-5 text-color-accent" />
-              <h3 className="font-bold text-color-text font-serif">Groq AI Risk Analysis Briefing</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto max-h-32 custom-scrollbar">
-              {generatingOpEd ? (
-                <div className="flex items-center gap-3 text-color-muted text-sm font-bold animate-pulse">
-                  <div className="w-4 h-4 border-2 border-color-accent border-t-transparent rounded-full animate-spin" />
-                  Groq Llama-3.1 is analyzing student data...
+      {/* Widget Modals */}
+      {(activeWidget || showBriefings) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => { setActiveWidget(null); setShowBriefings(false); }}>
+          <Card 
+            className={`w-full flex flex-col bg-color-surface neu-raised border-2 border-white/20 shadow-2xl relative transition-all max-h-[90vh] overflow-y-auto custom-scrollbar ${
+              activeWidget === 'health' ? 'max-w-sm' : 
+              showBriefings ? 'max-w-lg' : 
+              'max-w-2xl'
+            }`} 
+            onClick={e => e.stopPropagation()}
+          >
+            <Button variant="icon" onClick={() => { setActiveWidget(null); setShowBriefings(false); }} className="absolute top-4 right-4 rounded-full hover:bg-black/5 p-2 transition-colors z-10">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </Button>
+            
+            <div className="p-8 mt-4">
+              {activeWidget === 'health' && (
+                <div className="flex flex-col items-center text-center">
+                  <Activity className="w-10 h-10 mb-4 text-color-accent" />
+                  <h3 className="text-lg font-bold text-color-muted uppercase tracking-widest mb-2">Classroom Health Score</h3>
+                  <div className="text-6xl font-black font-serif text-color-text my-4">
+                    {healthScore ? `${healthScore.healthScore}%` : '...'}
+                  </div>
+                  <Badge variant={healthScore?.healthScore && healthScore.healthScore >= 70 ? 'success' : 'warning'} className="px-4 py-2 text-sm font-bold shadow-sm">
+                    {healthScore?.status || 'Analyzing'}
+                  </Badge>
                 </div>
-              ) : opEdText ? (
-                <p className="text-sm text-color-text/80 leading-relaxed italic typewriter-text">"{opEdText}"</p>
-              ) : (
-                <p className="text-sm text-color-muted italic">Click "AI Briefing" to generate a real-time risk analysis for your classroom.</p>
+              )}
+
+              {showBriefings && (
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
+                    <ShieldAlert className="w-6 h-6 text-color-accent" />
+                    <h3 className="font-bold text-xl text-color-text font-serif">Groq AI Risk Analysis Briefing</h3>
+                  </div>
+                  <div className="flex-1 bg-color-background/50 rounded-xl p-6 border border-black/5">
+                    {generatingOpEd ? (
+                      <div className="flex items-center gap-3 text-color-muted font-bold animate-pulse">
+                        <div className="w-5 h-5 border-2 border-color-accent border-t-transparent rounded-full animate-spin" />
+                        Groq Llama-3.1 is analyzing student data...
+                      </div>
+                    ) : opEdText ? (
+                      <p className="text-lg text-color-text/90 leading-relaxed italic typewriter-text">"{opEdText}"</p>
+                    ) : (
+                      <p className="text-color-muted italic">Click to generate a real-time risk analysis for your classroom.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeWidget === 'trend' && (
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
+                    <TrendingUp className="w-6 h-6 text-color-accent" />
+                    <h3 className="font-bold text-xl text-color-text font-serif">Classroom Engagement Trend (7 Days)</h3>
+                  </div>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={engagementTrend.length > 0 ? engagementTrend : engagementData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorAvgScore" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-muted)' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-muted)' }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'var(--color-surface)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '4px 4px 10px rgba(0,0,0,0.1)' }}
+                          itemStyle={{ fontWeight: 'bold' }}
+                        />
+                        <Area type="monotone" dataKey="engagement" stroke="var(--color-accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEngagement)" activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-accent)' }} />
+                        <Area type="monotone" dataKey="avgScore" stroke="var(--color-success)" strokeWidth={2} fillOpacity={1} fill="url(#colorAvgScore)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               )}
             </div>
           </Card>
         </div>
       )}
 
-      {/* Engagement Trend Chart (Recharts) */}
-      <div className="animate-fade-in mt-6">
-        <Card className="p-6 bg-color-surface border border-white/50 neu-raised">
-          <div className="flex items-center gap-2 mb-6 border-b border-black/5 pb-3">
-            <TrendingUp className="w-5 h-5 text-color-accent" />
-            <h3 className="font-bold text-color-text font-serif">Classroom Engagement & Health Trend (7 Days)</h3>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={engagementData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorAvgScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-muted)' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-muted)' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-surface)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '4px 4px 10px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ fontWeight: 'bold' }}
-                />
-                <Area type="monotone" dataKey="engagement" stroke="var(--color-accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEngagement)" activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-accent)' }} />
-                <Area type="monotone" dataKey="avgScore" stroke="var(--color-success)" strokeWidth={2} fillOpacity={1} fill="url(#colorAvgScore)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
       {/* 2. Main Content Grid (Spacious Full-Width Student Dossiers) */}
-      <div className="space-y-6 mt-8">
+      <div className="space-y-6 mt-4">
         <div className="border-b border-black/5 pb-2">
           <h2 className="text-xl font-bold text-color-text font-serif">Student Dossiers</h2>
           <p className="text-color-muted text-[10px] font-mono uppercase">Individual profiles and their active enrollments</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {studentList.length === 0 ? (
-            <div className="col-span-full p-8 text-center text-color-muted border border-dashed border-black/10 rounded-xl bg-color-surface/50">
+            <div className="col-span-full p-6 text-center text-color-muted border border-dashed border-black/10 rounded-xl bg-color-surface/50">
               No students are currently enrolled in any of your courses.
             </div>
           ) : studentList.map((student, index) => {
@@ -273,7 +310,7 @@ export function TeacherDashboard() {
             return (
               <Card 
                 key={index}
-                className="p-6 cursor-pointer border border-white/50 bg-color-surface flex flex-col justify-between relative group overflow-hidden transition-all duration-200 hover:shadow-[10px_10px_20px_var(--shadow-dark),-10px_-10px_20px_var(--shadow-light)]"
+                className="p-4 cursor-pointer border border-white/50 bg-color-surface flex flex-col justify-between relative group overflow-hidden transition-all duration-200 hover:shadow-[10px_10px_20px_var(--shadow-dark),-10px_-10px_20px_var(--shadow-light)]"
               >
                 {/* Visual indicator corner */}
                 <div className={`absolute top-0 right-0 w-20 h-20 -mr-10 -mt-10 rounded-full opacity-10 blur-lg ${
@@ -300,11 +337,11 @@ export function TeacherDashboard() {
                   </div>
 
                   {/* Active Courses */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-xs text-color-text font-serif leading-snug">
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-[11px] text-color-text font-serif leading-snug">
                       Enrolled Courses ({student.courses.length})
                     </h4>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1">
                       {student.courses.slice(0, 3).map((course: any, idx: number) => (
                         <div 
                           key={idx} 
@@ -326,9 +363,9 @@ export function TeacherDashboard() {
                 </div>
 
                 {/* Go To Action */}
-                <div className="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-xs font-bold text-color-muted group-hover:text-color-accent transition-colors" onClick={() => navigate(`/teacher/student/${student.id}`)}>
+                <div className="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-[10px] font-bold text-color-muted group-hover:text-color-accent transition-colors" onClick={() => navigate(`/teacher/student/${student.id}`)}>
                   <span className="uppercase tracking-wider">Access Profile</span>
-                  <ArrowUpRight className="w-4 h-4 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  <ArrowUpRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
               </Card>
             );
@@ -428,7 +465,7 @@ export function TeacherDashboard() {
                             {sub.answerText && <p className="text-sm whitespace-pre-wrap">{sub.answerText}</p>}
                             {sub.answerImageUrl && (
                               <div className="mt-2">
-                                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `http://localhost:8080${sub.answerImageUrl}`} alt="Submission file" className="max-w-xs rounded-xl border border-black/10 shadow-sm" />
+                                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `${API_BASE_URL}${sub.answerImageUrl}`} alt="Submission file" className="max-w-xs rounded-xl border border-black/10 shadow-sm" />
                               </div>
                             )}
                           </div>

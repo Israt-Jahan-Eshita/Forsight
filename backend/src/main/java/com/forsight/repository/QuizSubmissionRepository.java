@@ -17,4 +17,5 @@ public interface QuizSubmissionRepository extends JpaRepository<QuizSubmission, 
     List<QuizSubmission> findByQuizTeacher(User teacher);
     
     List<QuizSubmission> findByQuizAndStudent(Quiz quiz, User student);
+    List<QuizSubmission> findByStudentOrderBySubmissionDateAsc(User student);
 }

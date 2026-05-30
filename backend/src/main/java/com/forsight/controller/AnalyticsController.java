@@ -29,6 +29,9 @@ public class AnalyticsController {
     @Autowired
     private QuizSubmissionRepository quizSubmissionRepository;
 
+    @Autowired
+    private com.forsight.service.AnalyticsService analyticsService;
+
     @GetMapping("/logs/recent")
     public ResponseEntity<?> getRecentLogs() {
         try {
@@ -167,6 +170,98 @@ public class AnalyticsController {
 
             return ResponseEntity.ok(studentAnalyticsList);
 
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/analytics/students-risk")
+    public ResponseEntity<?> getStudentsRisk() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User teacher = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+            List<com.forsight.model.Enrollment> enrollments = enrollmentRepository.findByTeacherId(teacher.getId());
+            java.util.Set<User> students = enrollments.stream().map(com.forsight.model.Enrollment::getStudent).collect(java.util.stream.Collectors.toSet());
+            List<QuizSubmission> allSubmissions = quizSubmissionRepository.findByQuizTeacher(teacher);
+
+            List<Map<String, Object>> riskList = new java.util.ArrayList<>();
+
+            for (User student : students) {
+                List<QuizSubmission> studentSubs = allSubmissions.stream()
+                        .filter(s -> s.getStudent().getId().equals(student.getId()))
+                        .sorted(java.util.Comparator.comparing(QuizSubmission::getSubmissionDate))
+                        .toList();
+                String courseName = "General";
+                if (!enrollments.isEmpty()) {
+                    courseName = enrollments.stream()
+                            .filter(e -> e.getStudent().getId().equals(student.getId()))
+                            .map(e -> e.getCourse().getName())
+                            .findFirst().orElse("General");
+                }
+
+                Map<String, Object> riskData = analyticsService.calculateStudentRisk(student);
+                riskData.put("courseName", courseName);
+
+                riskList.add(riskData);
+            }
+
+            // Sort by risk descending
+            riskList.sort((a, b) -> Integer.compare((Integer) b.get("riskScore"), (Integer) a.get("riskScore")));
+
+            return ResponseEntity.ok(riskList);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/analytics/engagement-trend")
+    public ResponseEntity<?> getEngagementTrend() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User teacher = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+            List<QuizSubmission> allSubmissions = quizSubmissionRepository.findByQuizTeacher(teacher);
+            
+            List<Map<String, Object>> trend = new java.util.ArrayList<>();
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("EEE");
+
+            for (int i = 6; i >= 0; i--) {
+                java.time.LocalDate targetDate = today.minusDays(i);
+                String dayName = targetDate.format(formatter);
+                
+                int dailyEngagementCount = 0;
+                double totalScorePct = 0.0;
+                int gradedCount = 0;
+
+                for (QuizSubmission sub : allSubmissions) {
+                    if (sub.getSubmissionDate() != null) {
+                        java.time.LocalDate subDate = sub.getSubmissionDate().toLocalDate();
+                        if (subDate.equals(targetDate)) {
+                            dailyEngagementCount += 10; // 10 points per submission
+                            
+                            if ("GRADED".equals(sub.getStatus()) && sub.getScore() != null && sub.getMaxScore() != null && sub.getMaxScore() > 0) {
+                                totalScorePct += ((double) sub.getScore() / sub.getMaxScore()) * 100.0;
+                                gradedCount++;
+                            }
+                        }
+                    }
+                }
+                
+                int avgScore = gradedCount > 0 ? (int) Math.round(totalScorePct / gradedCount) : 0;
+                int engagement = Math.min(100, dailyEngagementCount);
+                
+                trend.add(Map.of(
+                        "day", dayName,
+                        "engagement", engagement,
+                        "avgScore", avgScore
+                ));
+            }
+            return ResponseEntity.ok(trend);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

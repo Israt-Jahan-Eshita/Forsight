@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -45,7 +46,7 @@ export function AdminRegistration() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/messages/users', {
+      const response = await fetch(`${API_BASE_URL}/api/messages/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

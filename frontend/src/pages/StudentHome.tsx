@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -24,6 +25,8 @@ interface QuizSubmission {
     id: number;
     title: string;
     course?: { id: number; name: string; className: string; };
+    subject?: string;
+    resource?: { course?: { name: string } };
   };
   student: { id: number; name: string; email: string; };
   answerText: string;
@@ -47,8 +50,8 @@ export function StudentHome() {
     const fetchDashboardData = async () => {
       try {
         const [chronResponse, subResponse] = await Promise.all([
-          fetch('http://localhost:8080/api/enrollments/student/chronicle', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://localhost:8080/api/submissions', { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${API_BASE_URL}/api/enrollments/student/chronicle`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE_URL}/api/submissions`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (chronResponse.ok) {
@@ -329,7 +332,7 @@ export function StudentHome() {
                             {sub.answerText && <p className="text-sm whitespace-pre-wrap">{sub.answerText}</p>}
                             {sub.answerImageUrl && (
                               <div className="mt-2">
-                                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `http://localhost:8080${sub.answerImageUrl}`} alt="Submission file" className="max-w-xs rounded-xl border border-black/10 shadow-sm" />
+                                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `${API_BASE_URL}${sub.answerImageUrl}`} alt="Submission file" className="max-w-xs rounded-xl border border-black/10 shadow-sm" />
                               </div>
                             )}
                           </div>

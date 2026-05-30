@@ -27,12 +27,14 @@ public class User {
     private String grade; // for students
     
     private String status; // e.g., "Active"
+    
+    private String avatarUrl; // Profile picture URL
 
     // Default Constructor
     public User() {}
 
     // Full Constructor
-    public User(Long id, String name, String email, String password, Role role, String subject, String grade, String status) {
+    public User(Long id, String name, String email, String password, Role role, String subject, String grade, String status, String avatarUrl) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -41,6 +43,7 @@ public class User {
         this.subject = subject;
         this.grade = grade;
         this.status = status;
+        this.avatarUrl = avatarUrl;
     }
 
     // Getters and Setters
@@ -68,6 +71,9 @@ public class User {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
     // Custom Builder
     public static UserBuilder builder() {
         return new UserBuilder();
@@ -82,6 +88,7 @@ public class User {
         private String subject;
         private String grade;
         private String status;
+        private String avatarUrl;
 
         public UserBuilder id(Long id) { this.id = id; return this; }
         public UserBuilder name(String name) { this.name = name; return this; }
@@ -91,9 +98,10 @@ public class User {
         public UserBuilder subject(String subject) { this.subject = subject; return this; }
         public UserBuilder grade(String grade) { this.grade = grade; return this; }
         public UserBuilder status(String status) { this.status = status; return this; }
+        public UserBuilder avatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; return this; }
 
         public User build() {
-            return new User(id, name, email, password, role, subject, grade, status);
+            return new User(id, name, email, password, role, subject, grade, status, avatarUrl);
         }
     }
 }

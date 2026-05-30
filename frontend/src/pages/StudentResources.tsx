@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -131,7 +132,7 @@ export function StudentResources() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/courses', {
+      const response = await fetch(`${API_BASE_URL}/api/courses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -147,7 +148,7 @@ export function StudentResources() {
         }
       }
 
-      const enrollResponse = await fetch('http://localhost:8080/api/enrollments/student', {
+      const enrollResponse = await fetch(`${API_BASE_URL}/api/enrollments/student`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (enrollResponse.ok) {
@@ -175,14 +176,14 @@ export function StudentResources() {
         return;
       }
 
-      const resResponse = await fetch(`http://localhost:8080/api/resources?courseId=${selectedCourse.id}`, {
+      const resResponse = await fetch(`${API_BASE_URL}/api/resources?courseId=${selectedCourse.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resResponse.ok) {
         setResources(await resResponse.json());
       }
 
-      const quizResponse = await fetch('http://localhost:8080/api/quizzes', {
+      const quizResponse = await fetch(`${API_BASE_URL}/api/quizzes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (quizResponse.ok) {
@@ -196,11 +197,12 @@ export function StudentResources() {
   };
 
   const handleDownload = (id: number, name: string) => {
+    localStorage.setItem(`opened_resource_${id}`, 'true');
     if (!token || token === 'mock-jwt-token') {
       alert(`Downloading ${name} in Preview Mode!`);
       return;
     }
-    window.open(`http://localhost:8080/api/resources/${id}/download?access_token=${token}`, '_blank');
+    window.open(`${API_BASE_URL}/api/resources/${id}/download?access_token=${token}`, '_blank');
   };
 
   const handleEnroll = async (courseId: number) => {
@@ -218,7 +220,7 @@ export function StudentResources() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/enrollments/${courseId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/enrollments/${courseId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -238,6 +240,7 @@ export function StudentResources() {
   };
 
   const handlePreview = (res: Resource) => {
+    localStorage.setItem(`opened_resource_${res.id}`, 'true');
     const isEnrolled = enrollments.some(e => e.course?.id === selectedCourse?.id);
     setPreviewResource({ id: res.id, name: res.fileName });
     if (!isEnrolled) {
@@ -369,18 +372,22 @@ export function StudentResources() {
                             <Button 
                               variant="primary" 
                               className="w-full text-xs py-2 h-9 font-bold" 
-                              onClick={() => navigate('/ask-ai', { state: { resourceId: res.id, fileName: res.fileName } })}
+                              onClick={() => {
+                                localStorage.setItem(`opened_resource_${res.id}`, 'true');
+                                navigate('/ask-ai', { state: { resourceId: res.id, fileName: res.fileName } });
+                              }}
                             >
                               AI Assistant & Notes
                             </Button>
                             {resourceQuizzes.length > 0 && (
                               <select 
                                 className="w-full text-xs px-3 h-9 font-bold border-2 border-color-accent text-color-accent bg-transparent rounded-xl cursor-pointer focus:outline-none"
+                                defaultValue=""
                                 onChange={(e) => {
                                   if (e.target.value) navigate('/quizzes', { state: { quizId: parseInt(e.target.value) } })
                                 }}
                               >
-                                <option value="" disabled selected hidden>Practice Quiz ({resourceQuizzes.length})</option>
+                                <option value="" disabled hidden>Practice Quiz ({resourceQuizzes.length})</option>
                                 {resourceQuizzes.map(q => <option key={q.id} value={q.id}>{q.title}</option>)}
                               </select>
                             )}
@@ -453,7 +460,7 @@ export function StudentResources() {
             </div>
             <div className="flex-1 w-full bg-color-background overflow-hidden relative p-4">
               <iframe 
-                src={token && token !== 'mock-jwt-token' ? `http://localhost:8080/api/resources/${previewResource.id}/view?access_token=${token}` : ''}
+                src={token && token !== 'mock-jwt-token' ? `${API_BASE_URL}/api/resources/${previewResource.id}/view?access_token=${token}` : ''}
                 className="w-full h-full border-0 rounded-xl bg-white shadow-inner"
                 title={previewResource.name}
               />

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 export type Role = 'admin' | 'teacher' | 'student' | null;
@@ -8,6 +9,7 @@ export interface User {
   email: string;
   role: string;
   status: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -66,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Otherwise, perform actual Spring Boot backend JWT request
-    const response = await fetch('http://localhost:8080/api/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, role: string) => {
-    const response = await fetch('http://localhost:8080/api/auth/register', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

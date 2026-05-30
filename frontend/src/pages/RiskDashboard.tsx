@@ -1,8 +1,9 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+
 import { Avatar } from '../components/ui/Avatar';
-import { Search, AlertTriangle, Filter, ChevronRight, Activity } from 'lucide-react';
+import { Search, AlertTriangle, ChevronRight, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,17 +25,34 @@ export function RiskDashboard() {
   const [filter, setFilter] = useState<'All' | 'Safe' | 'Watch' | 'At-Risk' | 'Critical'>('All');
 
   useEffect(() => {
-    // In a real app, this would fetch from /api/analytics/students-risk
-    // We will mock this data to fulfill the UI requirement quickly
-    const mockData: StudentRisk[] = [
-      { id: 2, name: 'Sara Rahman', email: 'sara@student.edu', status: 'Safe', riskScore: 12, courseName: 'Science Class 10' },
-      { id: 4, name: 'Vikram Das', email: 'vikram@student.edu', status: 'Critical', riskScore: 92, courseName: 'Science Class 10' },
-      { id: 5, name: 'Aarav Patel', email: 'aarav@student.edu', status: 'At-Risk', riskScore: 78, courseName: 'Math Class 10' },
-      { id: 6, name: 'Neha Gupta', email: 'neha@student.edu', status: 'Watch', riskScore: 45, courseName: 'Science Class 10' },
-      { id: 7, name: 'Rohan Sharma', email: 'rohan@student.edu', status: 'Safe', riskScore: 5, courseName: 'English Class 10' },
-    ];
-    setStudents(mockData);
-  }, []);
+    const fetchRiskData = async () => {
+      try {
+        if (!token || token === 'mock-jwt-token') {
+          // Fallback mock data
+          const mockData: StudentRisk[] = [
+            { id: 2, name: 'Sara Rahman', email: 'sara@student.edu', status: 'Safe', riskScore: 12, courseName: 'Science Class 10' },
+            { id: 4, name: 'Vikram Das', email: 'vikram@student.edu', status: 'Critical', riskScore: 92, courseName: 'Science Class 10' },
+            { id: 5, name: 'Aarav Patel', email: 'aarav@student.edu', status: 'At-Risk', riskScore: 78, courseName: 'Math Class 10' },
+            { id: 6, name: 'Neha Gupta', email: 'neha@student.edu', status: 'Watch', riskScore: 45, courseName: 'Science Class 10' },
+            { id: 7, name: 'Rohan Sharma', email: 'rohan@student.edu', status: 'Safe', riskScore: 5, courseName: 'English Class 10' },
+          ];
+          setStudents(mockData);
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/analytics/students-risk`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStudents(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch risk data:', e);
+      }
+    };
+    fetchRiskData();
+  }, [token]);
 
   const criticalStudents = students.filter(s => s.status === 'Critical');
   

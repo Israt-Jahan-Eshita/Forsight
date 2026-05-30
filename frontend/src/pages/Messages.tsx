@@ -1,9 +1,10 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { Send, Search, Users, Heart, Reply, X } from 'lucide-react';
+import { Send, Search, Users, Reply, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface User {
@@ -75,11 +76,11 @@ export function Messages() {
         return;
       }
 
-      const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', { headers: { 'Authorization': `Bearer ${token}` } });
+      const contactsRes = await fetch(`${API_BASE_URL}/api/messages/contacts`, { headers: { 'Authorization': `Bearer ${token}` } });
       const contactsData: User[] = await contactsRes.json();
       setActiveContacts(contactsData);
 
-      const usersRes = await fetch('http://localhost:8080/api/messages/users', { headers: { 'Authorization': `Bearer ${token}` } });
+      const usersRes = await fetch(`${API_BASE_URL}/api/messages/users`, { headers: { 'Authorization': `Bearer ${token}` } });
       const usersData: User[] = await usersRes.json();
       setAllUsers(usersData);
 
@@ -106,7 +107,7 @@ export function Messages() {
         ]);
         return;
       }
-      const response = await fetch(`http://localhost:8080/api/messages/history/${selectedContact.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const response = await fetch(`${API_BASE_URL}/api/messages/history/${selectedContact.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) {
         setMessages(await response.json());
       }
@@ -142,7 +143,7 @@ export function Messages() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/messages', {
+      const response = await fetch(`${API_BASE_URL}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
@@ -153,7 +154,7 @@ export function Messages() {
         setReplyingTo(null);
         fetchChatHistory();
         
-        const contactsRes = await fetch('http://localhost:8080/api/messages/contacts', { headers: { 'Authorization': `Bearer ${token}` } });
+        const contactsRes = await fetch(`${API_BASE_URL}/api/messages/contacts`, { headers: { 'Authorization': `Bearer ${token}` } });
         setActiveContacts(await contactsRes.json());
       }
     } catch (e) {
