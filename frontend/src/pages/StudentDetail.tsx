@@ -33,29 +33,36 @@ export function StudentDetail() {
   const [showTranslateModal, setShowTranslateModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Mock data for Recharts
-  const scoreTrendData = [
-    { day: '1', score: 85 }, { day: '5', score: 82 }, { day: '10', score: 88 },
-    { day: '15', score: 75 }, { day: '20', score: 60 }, { day: '25', score: 55 }, { day: '30', score: 45 },
-  ];
+  // Real data from API (replaces mock arrays)
+  const [scoreTrendData, setScoreTrendData] = useState<any[]>([]);
+  const [engagementRadarData, setEngagementRadarData] = useState<any[]>([]);
+  const [cohortCompareData, setCohortCompareData] = useState<any[]>([]);
+  const [chartsLoading, setChartsLoading] = useState(true);
 
-  const engagementRadarData = [
-    { subject: 'Participation', A: 40, fullMark: 100 },
-    { subject: 'Homework', A: 30, fullMark: 100 },
-    { subject: 'Quiz Score', A: 50, fullMark: 100 },
-    { subject: 'Attendance', A: 90, fullMark: 100 },
-    { subject: 'Time spent', A: 45, fullMark: 100 },
-  ];
-
-  const cohortCompareData = [
-    { name: 'This Student', score: 45 },
-    { name: 'Class Avg', score: 78 },
-    { name: 'Top 10%', score: 95 },
-  ];
 
   useEffect(() => {
     fetchLogs();
+    fetchStudentAnalytics();
   }, [token]);
+
+  const fetchStudentAnalytics = async () => {
+    setChartsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/analytics/student/${id}/detail`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScoreTrendData(data.scoreTrend || []);
+        setEngagementRadarData(data.engagementRadar || []);
+        setCohortCompareData(data.cohortCompare || []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch student analytics', e);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
 
   const fetchLogs = async () => {
     try {
@@ -208,8 +215,13 @@ export function StudentDetail() {
         {/* 3. Asymmetric Charts Grid & AI Insight (Right Columns) */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 2. Three Column Analytics */}
+          {chartsLoading ? (
+            <div className="py-20 text-center text-color-muted font-bold text-xl animate-pulse">
+              Loading Analytics Data...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Score Trend (Full Width) */}
             <Card className="md:col-span-2 p-4 bg-color-surface border border-white/60 neu-raised">
               <h4 className="text-xs font-bold text-color-muted uppercase mb-4">30-Day Score Trend</h4>
@@ -249,22 +261,25 @@ export function StudentDetail() {
             {/* Cohort Compare (50%) */}
             <Card className="p-4 bg-color-surface border border-white/60 neu-raised flex flex-col">
               <h4 className="text-xs font-bold text-color-muted uppercase mb-4">Cohort Comparison</h4>
-              <div className="h-40 w-full mt-auto">
+              <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cohortCompareData} layout="vertical" margin={{top: 0, right: 0, left: -20, bottom: 0}}>
+                  <BarChart data={cohortCompareData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#555', fontWeight: 'bold'}} />
-                    <Tooltip cursor={{fill: 'rgba(0,0,0,0.02)'}} />
-                    <Bar dataKey="score" fill="#c7d2fe" radius={[0, 4, 4, 0]}>
-                      {cohortCompareData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : '#818cf8'} />
-                      ))}
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted)', fontWeight: 'bold' }} width={80} />
+                    <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                    <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={16}>
+                      {
+                        cohortCompareData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-accent)' : 'var(--color-success)'} />
+                        ))
+                      }
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Card>
           </div>
+          )}
 
           {/* 4. AI Insight Panel */}
           <Card className="p-0 bg-color-surface neu-raised border border-color-accent/20 overflow-hidden relative">

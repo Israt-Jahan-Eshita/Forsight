@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { FileText, MessageSquare, Send, Sparkles, BookOpen, Download, Copy, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -329,7 +330,7 @@ export function StudentAskAI() {
                     </Button>
                   </div>
                   <div className="prose prose-sm max-w-none text-color-text whitespace-pre-wrap leading-relaxed overflow-y-auto pl-1 pr-2">
-                    {notes}
+                    <ReactMarkdown>{notes}</ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -348,7 +349,9 @@ export function StudentAskAI() {
                         <Sparkles className="w-3 h-3" /> Study Guide Assistant
                       </div>
                     )}
-                    <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
+                    <div className="whitespace-pre-wrap font-sans">
+                      {msg.sender === 'ai' ? <ReactMarkdown>{msg.content}</ReactMarkdown> : msg.content}
+                    </div>
                   </div>
                 ))}
                 {botTyping && (

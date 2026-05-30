@@ -53,22 +53,30 @@ export function Login() {
           </div>
         )}
 
-        <div className="mb-8 grid grid-cols-2 gap-4">
+        <div className="mb-8 grid grid-cols-3 gap-4">
           <div 
             onClick={() => executeLogin('judge@forsight.com', 'judge123')}
-            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center"
+            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center flex flex-col justify-between"
           >
             <div className="mb-2"><UserCheck className="w-8 h-8 text-color-accent mx-auto" /></div>
             <div className="text-xs font-bold text-color-accent uppercase">Judge View</div>
-            <div className="text-[10px] text-color-muted mt-1 font-mono">judge@forsight.com</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono break-all">judge@forsight.com</div>
+          </div>
+          <div 
+            onClick={() => executeLogin('sara@forsight.com', 'student123')}
+            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center flex flex-col justify-between"
+          >
+            <div className="mb-2"><BookOpen className="w-8 h-8 text-color-accent mx-auto" /></div>
+            <div className="text-xs font-bold text-color-accent uppercase">Student View</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono break-all">sara@forsight.com</div>
           </div>
           <div 
             onClick={() => executeLogin('admin@forsight.com', 'admin123')}
-            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center"
+            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center flex flex-col justify-between"
           >
             <div className="mb-2"><Settings className="w-8 h-8 text-color-accent mx-auto" /></div>
             <div className="text-xs font-bold text-color-accent uppercase">Admin View</div>
-            <div className="text-[10px] text-color-muted mt-1 font-mono">admin@forsight.com</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono break-all">admin@forsight.com</div>
           </div>
         </div>
 

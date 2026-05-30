@@ -230,9 +230,9 @@ export function PublicDocs() {
             <div className="space-y-6">
               <div className="bg-color-surface p-6 rounded-2xl shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)] border border-white/60 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-color-accent"></div>
-                <h3 className="text-lg font-bold text-color-text mb-2">1. The Dashboard (Teacher / Judge View)</h3>
+                <h3 className="text-lg font-bold text-color-text mb-2">1. 1-Click Fast Login</h3>
                 <p className="text-sm text-color-text leading-relaxed mb-4">
-                  Click the <strong>Launch Dashboard 🚀</strong> button on the top right. Then, click the <strong>Judge View</strong> quick-access card to log in automatically. You will be taken to the Analytics Dashboard.
+                  Click the <strong>Launch Dashboard 🚀</strong> button on the top right. You'll see three dedicated quick-access cards: <strong>Judge View</strong>, <strong>Student View</strong>, and <strong>Admin View</strong>. Click <strong>Judge View</strong> to jump straight into the Teacher Analytics Dashboard.
                 </p>
                 <ul className="text-xs text-color-muted space-y-2 list-disc list-inside">
                   <li><strong>What you'll see:</strong> A ranked list of students sorted by their real-time "Risk Score" (0-100).</li>
@@ -241,26 +241,26 @@ export function PublicDocs() {
               </div>
 
               <div className="bg-color-surface p-6 rounded-2xl shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)] border border-white/60 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-color-success"></div>
+                <h3 className="text-lg font-bold text-color-text mb-2">2. The "Demo Switcher" (Seamless Role Swap)</h3>
+                <p className="text-sm text-color-text leading-relaxed mb-4">
+                  We know your time is valuable. You don't need to log out or open incognito windows to see the student's perspective.
+                </p>
+                <ul className="text-xs text-color-muted space-y-2 list-disc list-inside">
+                  <li><strong>Action:</strong> Click the <strong>"Demo Switcher"</strong> button in the top right Navbar from any dashboard.</li>
+                  <li><strong>Result:</strong> Instantly hot-swap between the Teacher Dashboard, a "Safe" Student (Sara), or a "Critical Risk" Student (Vikram) with a single click.</li>
+                </ul>
+              </div>
+
+              <div className="bg-color-surface p-6 rounded-2xl shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)] border border-white/60 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-color-danger"></div>
-                <h3 className="text-lg font-bold text-color-text mb-2">2. Groq AI Interventions</h3>
+                <h3 className="text-lg font-bold text-color-text mb-2">3. Groq AI Interventions</h3>
                 <p className="text-sm text-color-text leading-relaxed mb-4">
                   In the Teacher Dashboard, find a student with a High Risk score (red badge). Click the <strong>Ask AI</strong> button next to their name.
                 </p>
                 <ul className="text-xs text-color-muted space-y-2 list-disc list-inside">
                   <li><strong>What you'll see:</strong> The system sends the student's exact behavioral flags to our integrated Groq AI LLM.</li>
                   <li><strong>The Result:</strong> Groq generates a highly personalized, single-sentence intervention strategy for the teacher to immediately apply.</li>
-                </ul>
-              </div>
-
-              <div className="bg-color-surface p-6 rounded-2xl shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)] border border-white/60 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-black/20"></div>
-                <h3 className="text-lg font-bold text-color-text mb-2">3. The Admin Panel</h3>
-                <p className="text-sm text-color-text leading-relaxed mb-4">
-                  Log out of the Judge account, and log back in using the <strong>Admin View</strong> card. Navigate to the <strong>Manage /docs</strong> button.
-                </p>
-                <ul className="text-xs text-color-muted space-y-2 list-disc list-inside">
-                  <li><strong>What you'll see:</strong> The exact control panel powering this pitch deck.</li>
-                  <li><strong>How it works:</strong> You can edit the text, toggle the access window ON/OFF, and see it instantly reflect on the public endpoint.</li>
                 </ul>
               </div>
             </div>

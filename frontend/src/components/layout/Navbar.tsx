@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '../../config';
 import { useState, useEffect } from 'react';
-import { Bell, Menu, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, Menu, MessageSquare, CheckCircle, AlertCircle, ChevronDown, UserCheck, BookOpen } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -11,12 +11,13 @@ interface NavbarProps {
 }
 
 export function Navbar({ onMenuClick }: NavbarProps) {
-  const { role, user, token } = useAuth();
+  const { role, user, token, login } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
   const [notifications, setNotifications] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<number>>(() => {
     const saved = localStorage.getItem('fs_read_notifs');
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -172,6 +173,63 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           </div>
         )}
 
+        {/* Hackathon Demo Role Switcher */}
+        <div className="relative border-l border-black/10 pl-4 hidden sm:block">
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+            className="h-8 text-[10px] font-bold bg-color-accent/10 text-color-accent border border-color-accent/20 hover:bg-color-accent hover:text-white transition-all px-3"
+          >
+            Demo Switcher <ChevronDown className="w-3 h-3 ml-1" />
+          </Button>
+
+          {roleSwitcherOpen && (
+            <div className="absolute right-0 top-10 w-48 bg-white border border-black/10 rounded-xl shadow-lg p-2 z-[999999] animate-fade-in flex flex-col gap-1">
+              <div className="text-[9px] font-bold text-color-muted uppercase px-2 py-1">Quick Switch Role</div>
+              
+              {role !== 'teacher' && (
+                <button 
+                  onClick={async () => {
+                    setRoleSwitcherOpen(false);
+                    await login('judge@forsight.com', 'judge123');
+                    navigate('/dashboard');
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-color-text hover:bg-black/5 rounded-lg text-left transition-colors"
+                >
+                  <UserCheck className="w-4 h-4 text-color-accent" /> Teacher / Judge
+                </button>
+              )}
+              
+              {role !== 'student' && (
+                <button 
+                  onClick={async () => {
+                    setRoleSwitcherOpen(false);
+                    await login('sara@forsight.com', 'student123');
+                    navigate('/dashboard');
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-color-text hover:bg-black/5 rounded-lg text-left transition-colors"
+                >
+                  <BookOpen className="w-4 h-4 text-color-accent" /> Student (Sara)
+                </button>
+              )}
+
+              {role !== 'student' && (
+                <button 
+                  onClick={async () => {
+                    setRoleSwitcherOpen(false);
+                    await login('vikram@forsight.com', 'student123');
+                    navigate('/dashboard');
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-color-danger hover:bg-color-danger/10 rounded-lg text-left transition-colors"
+                >
+                  <AlertCircle className="w-4 h-4 text-color-danger" /> At-Risk Student
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        
         <div 
           className="flex items-center gap-3 ml-2 pl-4 border-l border-black/10 cursor-pointer group"
           onClick={() => navigate('/profile')}
