@@ -55,12 +55,12 @@ export function Login() {
 
         <div className="mb-8 grid grid-cols-3 gap-4">
           <div 
-            onClick={() => executeLogin('judge@forsight.com', 'judge123')}
+            onClick={() => executeLogin('teacher@forsight.com', 'password123')}
             className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center flex flex-col justify-between"
           >
             <div className="mb-2"><UserCheck className="w-8 h-8 text-color-accent mx-auto" /></div>
-            <div className="text-xs font-bold text-color-accent uppercase">Judge View</div>
-            <div className="text-[10px] text-color-muted mt-1 font-mono break-all">judge@forsight.com</div>
+            <div className="text-xs font-bold text-color-accent uppercase">Teacher View</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono break-all">teacher@forsight.com</div>
           </div>
           <div 
             onClick={() => executeLogin('sara@forsight.com', 'student123')}

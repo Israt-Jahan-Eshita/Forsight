@@ -232,7 +232,7 @@ export function PublicDocs() {
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-color-accent"></div>
                 <h3 className="text-lg font-bold text-color-text mb-2">1. 1-Click Fast Login</h3>
                 <p className="text-sm text-color-text leading-relaxed mb-4">
-                  Click the <strong>Launch Dashboard 🚀</strong> button on the top right. You'll see three dedicated quick-access cards: <strong>Judge View</strong>, <strong>Student View</strong>, and <strong>Admin View</strong>. Click <strong>Judge View</strong> to jump straight into the Teacher Analytics Dashboard.
+                  Click the <strong>Launch Dashboard 🚀</strong> button on the top right. You'll see three dedicated quick-access cards: <strong>Teacher View</strong>, <strong>Student View</strong>, and <strong>Admin View</strong>. Click <strong>Teacher View</strong> to jump straight into the Teacher Analytics Dashboard.
                 </p>
                 <ul className="text-xs text-color-muted space-y-2 list-disc list-inside">
                   <li><strong>What you'll see:</strong> A ranked list of students sorted by their real-time "Risk Score" (0-100).</li>
