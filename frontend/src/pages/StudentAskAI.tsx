@@ -1,9 +1,9 @@
 import { API_BASE_URL } from '../config';
-import { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { FileText, MessageSquare, Send, Sparkles, BookOpen, Download, Copy, CheckCircle2, Bot, User, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, MessageSquare, Send, Sparkles, BookOpen, Download, Copy, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import { JudgeBanner } from '../components/ui/JudgeBanner';
