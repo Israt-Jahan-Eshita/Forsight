@@ -1,54 +1,93 @@
-# 👁️ Forsight: Predictive Learning Analytics Dashboard
+# Forsight
 
-![Dashboard Preview](https://via.placeholder.com/1200x600?text=Forsight+Dashboard)
+**Live Deployment:** [https://forsight-app.onrender.com](https://forsight-app.onrender.com)
 
-**Forsight** is an AI-powered predictive analytics dashboard designed to shift education from reactive grading to proactive intervention. Built for the EdTech Learning Analytics hackathon, Forsight analyzes behavioral telemetry to identify at-risk students *before* their grades drop.
-
-## 🏆 The Problem We Solve
-70% of at-risk students display behavioral drop-offs weeks before their grades slip. Existing platforms only report the past. They do not predict the future. Forsight solves this by tracking how students interact with the material, not just what they score.
-
-## ✨ Core Features
-1. **Predictive Heuristics Engine**: Computes a real-time Risk Score (0-100) using weighted factors (Grade Drop, Missed Deadlines, Time Variance, Resource Skipping).
-2. **Groq AI Interventions**: Generates personalized, one-sentence intervention strategies when a student crosses the risk threshold.
-3. **Behavioral Flags**: Identifies specific student patterns like "Speed-Runner" or "Resource Skipper".
-4. **Parent-Teacher Localization**: Translates AI insights into native languages (e.g., Bengali) for inclusive parent communication.
-5. **Smart Document Assistant**: AI-powered study companion that helps students engage deeply with uploaded PDFs.
-
-## 🛠️ Technology Stack
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Recharts. Features a custom "Neubrutalist" design system.
-- **Backend**: Spring Boot 3.2, Java 17, Spring Security + JWT, Spring Data JPA.
-- **Database**: PostgreSQL (Supabase).
-- **AI Integration**: Groq API (Llama-3.1-70b-versatile).
-
-## 🚀 Quick Start (Local Development)
-
-### Prerequisites
-- Node.js v18+
-- Java 17
-- PostgreSQL Database
-- Groq API Key
-
-### Backend Setup
-1. Navigate to `backend/`
-2. Create `.env` based on `.env.example` and add your database credentials and `GROQ_API_KEY`.
-3. Run the Spring Boot application: `./mvnw spring-boot:run`
-
-### Frontend Setup
-1. Navigate to `frontend/`
-2. Install dependencies: `npm install`
-3. Run the Vite dev server: `npm run dev`
-
-### Demo Accounts (Auto-seeded)
-- **Teacher/Judge**: `judge@forsight.com` / `judge123`
-- **Admin**: `admin@forsight.com` / `admin123`
-- **Student**: `sara@forsight.com` / `student123`
-
-## 📊 The Analytics Architecture
-Forsight goes beyond basic charting. It calculates an Engagement Radar and Cohort Comparison using real-world heuristic data:
-- **Participation**: Number of quizzes attempted.
-- **Resource Study**: Whether the student opened the reference material before attempting the quiz.
-- **Persistence**: Retries and attempt iterations.
-- **Time Invested**: Time delta between quiz start and submission.
+Forsight is an advanced educational telemetry platform designed to bridge the gap between passive learning management systems and proactive student success. By combining dynamic behavioral telemetry with a strict, hyper-contextual LLM tutor, Forsight empowers educators to identify at-risk students before they fail, while providing personalized, zero-hallucination academic support to students.
 
 ---
-*Built with ❤️ for the EdTech Hackathon 2026*
+
+## Problem Statement
+
+In modern education, learning management systems are fundamentally reactive. Teachers typically only realize a student is struggling after they have failed an exam or dropped out of a course. Concurrently, students lack access to personalized, 24/7 academic support that understands their specific curriculum, often relying on generic AI tools that hallucinate or provide irrelevant answers. There is a critical need for a unified system that simultaneously identifies systemic behavioral risk across a cohort while actively helping individuals study their exact course material.
+
+## Solution Architecture
+
+Forsight solves this systemic issue via a two-pronged approach:
+
+1. **Predictive Risk Telemetry:** As students interact with the platform (viewing resources, completing quizzes, assignment latency), the backend continuously aggregates behavioral data. A deterministic heuristic engine calculates a dynamic "Risk Score" (0-100) for every student. This allows teachers and administrators to view a macro-level Risk Dashboard, identify systemic issues, and intervene structurally.
+2. **Hyper-Contextual AI Tutor:** Forsight integrates with the Groq Cloud API for ultra-low latency LLM inference. When a student opens a study guide, the Java Spring Boot backend extracts the text directly from the PDF byte array and feeds it into the LLM as strict context. The AI acts as a dedicated tutor that only answers questions based on the teacher's exact curriculum, enforcing a strict zero-hallucination policy.
+
+---
+
+## Technical Stack
+
+### Frontend
+* **Framework:** React 18, Vite
+* **Styling:** TailwindCSS (Custom Neumorphic Design System)
+* **Icons:** Lucide React
+* **Deployment:** Render (Static Web Service)
+
+### Backend
+* **Framework:** Java, Spring Boot 3
+* **Security:** Spring Security, JWT (JSON Web Tokens), Role-Based Access Control (RBAC)
+* **File Processing:** Apache PDFBox (In-memory unstructured text extraction)
+* **Deployment:** Render (Web Service)
+
+### Database & Storage
+* **Relational Database:** PostgreSQL (Hosted on Supabase)
+* **Storage Pattern:** Binary byte array (bytea) storage for dynamic multimedia streaming (PDF, MP4, MP3, PNG)
+
+### AI & Data Pipeline
+* **LLM:** Llama-3-8B-8192 (via Groq Cloud API)
+* **Architecture:** Zero-shot Contextual RAG (Retrieval-Augmented Generation)
+
+---
+
+## Core Features
+
+* **Real-time Telemetry Dashboards:** Distinct interactive dashboards for Teachers and Administrators displaying aggregated cohort risk levels and individual student metrics.
+* **Context-Bound AI Chat:** An integrated conversational UI where students can ask questions about specific study materials. The LLM is strictly constrained via system prompting to reject out-of-scope queries.
+* **Multimedia Streaming:** Native browser streaming for uploaded MP4 video and audio files directly from the database layer.
+* **Automated Risk Scoring:** Hardcoded backend heuristics evaluate assignment latency and engagement variance to update risk profiles synchronously.
+* **Role-Based Access Control (RBAC):** Strict data isolation ensuring students cannot access peer telemetry, and teachers can only access enrolled cohorts.
+
+---
+
+## Local Development Setup
+
+To run this project locally, you will need Node.js, Java 17+, and a PostgreSQL database.
+
+### 1. Database Configuration
+Ensure you have a PostgreSQL instance running. Create a `.env` file in the `backend/` directory with the following properties:
+
+```env
+DB_URL=jdbc:postgresql://your-db-host:5432/your-db-name
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+GROQ_API_KEY=your_groq_api_key
+```
+
+### 2. Backend Initialization
+Navigate to the `backend/` directory and run the Spring Boot application using Maven wrapper:
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+The backend will start on `http://localhost:8080`. The database schema will be automatically generated, and the DataSeeder will populate mock users and courses.
+
+### 3. Frontend Initialization
+Navigate to the `frontend/` directory, install dependencies, and start the development server:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+The frontend will be available at `http://localhost:5173`. 
+
+### 4. Authentication Details
+The database seeder provisions three default accounts for immediate testing:
+* **Teacher/Judge:** judge@forsight.com (Password: judge123)
+* **Student:** sara@forsight.com (Password: student123)
+* **Admin:** admin@forsight.com (Password: admin123)
