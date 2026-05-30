@@ -6,6 +6,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Search, AlertTriangle, ChevronRight, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface StudentRisk {
   id: number;
@@ -81,6 +82,10 @@ export function RiskDashboard() {
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-8 animate-fade-in">
+      <JudgeBanner 
+        title="Macro-Level Risk Telemetry"
+        description="The predictive engine doesn't just track individuals. It aggregates institutional data across thousands of data points to identify systemic issues, allowing admins to intervene at a structural level."
+      />
       
       {/* 1. AlertStrip */}
       {criticalStudents.length > 0 && (

@@ -1,11 +1,12 @@
 import { API_BASE_URL } from '../config';
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { FileText, MessageSquare, Send, Sparkles, BookOpen, Download, Copy, CheckCircle2 } from 'lucide-react';
+import { FileText, MessageSquare, Send, Sparkles, BookOpen, Download, Copy, CheckCircle2, Bot, User, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReactMarkdown from 'react-markdown';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -237,7 +238,12 @@ export function StudentAskAI() {
   };
 
   return (
-    <div className="animate-fade-in pb-20 h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+    <div className="animate-fade-in pb-20 max-w-7xl mx-auto flex flex-col w-full h-[calc(100vh-120px)]">
+      <JudgeBanner 
+        title="Contextual Groq AI Tutor"
+        description="This isn't a generic chatbot. The backend extracts text directly from the active PDF document and feeds it into the Groq LLM to provide hyper-contextual, academic answers based strictly on the course material."
+      />
+      <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
       
       {/* PDF Viewer */}
       <div className="flex-1 neu-inset bg-color-surface rounded-xl overflow-hidden flex flex-col border border-white/50 shadow-sm">
@@ -382,6 +388,7 @@ export function StudentAskAI() {
         </Card>
       </div>
       
+      </div>
     </div>
   );
 }

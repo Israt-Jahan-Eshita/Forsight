@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Activity, BookOpen, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface Chronicle {
   courseId: number;
@@ -105,6 +106,10 @@ export function StudentHome() {
 
   return (
     <div className="animate-fade-in pb-20 max-w-6xl mx-auto space-y-8">
+      <JudgeBanner 
+        title="Student Telemetry Sync"
+        description="Every action a student takes—time spent reading, quiz attempts, login frequency—is tracked silently in the background and sent to our predictive risk engine to calculate their real-time Risk Score."
+      />
       
       {/* Risk Card */}
       <Card className="flex flex-col md:flex-row items-center p-10 gap-10 bg-color-surface neu-raised border border-white/50">
