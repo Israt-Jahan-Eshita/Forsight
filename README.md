@@ -25,13 +25,15 @@ Forsight solves this systemic issue via a two-pronged approach:
 * **Framework:** React 18, Vite
 * **Styling:** TailwindCSS (Custom Neumorphic Design System)
 * **Icons:** Lucide React
-* **Deployment:** Render (Static Web Service)
+* **Containerization:** Docker (Multi-stage build with Nginx)
+* **Deployment:** Render
 
 ### Backend
 * **Framework:** Java, Spring Boot 3
 * **Security:** Spring Security, JWT (JSON Web Tokens), Role-Based Access Control (RBAC)
 * **File Processing:** Apache PDFBox (In-memory unstructured text extraction)
-* **Deployment:** Render (Web Service)
+* **Containerization:** Docker (Eclipse Temurin JRE)
+* **Deployment:** Render Web Service
 
 ### Database & Storage
 * **Relational Database:** PostgreSQL (Hosted on Supabase)
