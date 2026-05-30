@@ -52,14 +52,22 @@ export function AdminDashboard() {
             <span className="text-color-accent font-bold">System Administration</span>
           </div>
         </div>
-        
-        <Button 
-          variant="primary" 
-          onClick={() => navigate('/admin/registration')}
-          className="neu-raised text-xs py-2 px-4 gap-1.5 flex items-center bg-color-accent text-white font-bold rounded-xl cursor-pointer shadow-sm hover:brightness-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Provision Account
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="secondary" 
+            onClick={() => navigate('/admin/docs')}
+            className="neu-inset text-xs py-2 px-4 gap-1.5 flex items-center bg-color-surface text-color-text font-bold rounded-xl cursor-pointer shadow-sm hover:text-color-accent transition-all border border-color-accent/20"
+          >
+            Manage /docs
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/admin/registration')}
+            className="neu-raised text-xs py-2 px-4 gap-1.5 flex items-center bg-color-accent text-white font-bold rounded-xl cursor-pointer shadow-sm hover:brightness-105 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Provision Account
+          </Button>
+        </div>
       </div>
 
       {/* 2. Compact Stat Cards (No massive round orbs!) */}

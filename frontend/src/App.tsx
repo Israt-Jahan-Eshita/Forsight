@@ -21,6 +21,9 @@ import { StudentQuizzes } from './pages/StudentQuizzes';
 import { Profile } from './pages/Profile';
 import { useAuth } from './context/AuthContext';
 
+import { PublicDocs } from './pages/PublicDocs';
+import { AdminDocsEditor } from './pages/AdminDocsEditor';
+
 function AppRoutes() {
   const { role } = useAuth();
   
@@ -28,16 +31,18 @@ function AppRoutes() {
   if (!role) {
     return (
       <Routes>
+        <Route path="/docs" element={<PublicDocs />} />
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
         </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/docs" replace />} />
       </Routes>
     );
   }
   
   return (
     <Routes>
+      <Route path="/docs" element={<PublicDocs />} />
       <Route element={<DesktopLayout />}>
         {/* Dynamic routing based on authenticated role */}
         <Route path="/dashboard" element={
@@ -49,6 +54,7 @@ function AppRoutes() {
         {/* Admin Specific Screens */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/registration" element={<AdminRegistration />} />
+        <Route path="/admin/docs" element={<AdminDocsEditor />} />
         
         {/* Teacher/Student Cohorts */}
         <Route path="/students" element={<TeacherStudentsList />} />

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,9 +8,9 @@ import { Bot, ArrowLeft, Languages, Copy, CheckCircle2, Activity } from 'lucide-
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  BarChart, Bar, Legend, AreaChart, Area
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  Radar, RadarChart, PolarGrid, PolarAngleAxis,
+  BarChart, Bar, AreaChart, Area, Cell
 } from 'recharts';
 
 export function StudentDetail() {
@@ -19,7 +20,7 @@ export function StudentDetail() {
   const { token } = useAuth();
   
   const studentData = location.state?.student || {
-    id: Number(id), name: 'Loading...', email: '', status: 'Safe', riskScore: 0, courseName: ''
+    id: Number(id), name: 'Loading...', email: '', status: 'Safe', riskScore: 0, courseName: '', behavioralFlags: []
   };
 
   const [logs, setLogs] = useState<any[]>([]);
@@ -58,7 +59,7 @@ export function StudentDetail() {
 
   const fetchLogs = async () => {
     try {
-      const logsRes = await fetch('http://localhost:8080/api/logs/recent', { headers: { 'Authorization': `Bearer ${token}` } });
+      const logsRes = await fetch(`${API_BASE_URL}/api/logs/recent`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (logsRes.ok) {
         setLogs(await logsRes.json());
       }
@@ -70,19 +71,20 @@ export function StudentDetail() {
   const generateInsight = async () => {
     setInsightGenerating(true);
     try {
-      const response = await fetch('http://localhost:8080/api/ai/student-insight', {
+      const flagsStr = studentData.behavioralFlags?.length > 0 ? studentData.behavioralFlags.join(', ') : 'None';
+      const promptText = `Student ${studentData.name} has a Risk Score of ${studentData.riskScore}. Course: ${studentData.courseName}. Behavioral flags detected: ${flagsStr}. Write a strict, 1-sentence intervention strategy for the teacher.`;
+      
+      const response = await fetch(`${API_BASE_URL}/api/ai/intervention-insight`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Student: ${studentData.name}, Score: ${studentData.riskScore}% Risk, Course: ${studentData.courseName}` })
+        body: JSON.stringify({ prompt: promptText })
       });
       if (response.ok) {
-        const text = await response.text();
-        const parts = text.split('|||');
-        setInsightWhy(parts[0]?.replace('Section 1:', '')?.trim() || "Analysis unavailable.");
-        setInsightWhat(parts[1]?.replace('Section 2:', '')?.trim() || "Actions unavailable.");
+        setInsightWhy('');
+        setInsightWhat(await response.text());
       }
     } catch (e) {
-      setInsightWhy("Error fetching insights.");
+      setInsightWhat("Error fetching insights.");
     } finally {
       setInsightGenerating(false);
     }
@@ -94,7 +96,7 @@ export function StudentDetail() {
     setTranslationGenerating(true);
     try {
       const contentToTranslate = `${insightWhy} ${insightWhat}`;
-      const response = await fetch('http://localhost:8080/api/ai/translate', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/translate`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: contentToTranslate })
@@ -148,6 +150,13 @@ export function StudentDetail() {
             <span className={`px-3 py-1 rounded-md text-xs font-black tracking-wider uppercase border ${getStatusColor(studentData.status)}`}>
               {studentData.status}
             </span>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {studentData.behavioralFlags?.map((flag: string, idx: number) => (
+                <Badge key={idx} className="bg-color-background/50 border-white text-[10px] text-color-text font-bold shadow-sm">
+                  {flag}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -247,8 +256,8 @@ export function StudentDetail() {
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#555', fontWeight: 'bold'}} />
                     <Tooltip cursor={{fill: 'rgba(0,0,0,0.02)'}} />
                     <Bar dataKey="score" fill="#c7d2fe" radius={[0, 4, 4, 0]}>
-                      {cohortCompareData.map((entry, index) => (
-                        <cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : '#818cf8'} />
+                      {cohortCompareData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : '#818cf8'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -267,7 +276,7 @@ export function StudentDetail() {
                 <h3 className="font-bold font-serif text-color-text">AI Diagnostic Insight</h3>
               </div>
               <div className="flex items-center gap-2">
-                {insightWhy && (
+                {insightWhat && (
                   <Button variant="secondary" size="sm" onClick={handleTranslate} className="text-[10px] h-8 bg-color-background font-bold px-3">
                     <Languages className="w-3 h-3 mr-1" /> Translate to Bangla
                   </Button>
@@ -278,8 +287,8 @@ export function StudentDetail() {
               </div>
             </div>
 
-            <div className="p-6 bg-color-background/50 min-h-[200px]">
-              {!insightWhy && !insightGenerating && (
+            <div className="p-6 bg-color-background/50 min-h-[150px]">
+              {!insightWhat && !insightGenerating && (
                 <div className="h-full flex flex-col items-center justify-center text-center text-color-muted py-8">
                   <Bot className="w-12 h-12 opacity-10 mb-2" />
                   <p className="text-sm">Click generate to run predictive behavioral diagnostics.</p>
@@ -293,18 +302,10 @@ export function StudentDetail() {
                 </div>
               )}
 
-              {insightWhy && !insightGenerating && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up">
-                  <div className="bg-white/60 p-4 rounded-xl border border-color-danger/10 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-color-danger" />
-                    <h5 className="font-bold text-xs text-color-danger mb-2 uppercase tracking-wide">Why Struggling</h5>
-                    <p className="text-xs text-color-text/90 leading-relaxed font-serif italic">"{insightWhy}"</p>
-                  </div>
-                  <div className="bg-white/60 p-4 rounded-xl border border-color-success/10 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-color-success" />
-                    <h5 className="font-bold text-xs text-color-success mb-2 uppercase tracking-wide">Recommended Action</h5>
-                    <p className="text-xs text-color-text/90 leading-relaxed font-serif italic">"{insightWhat}"</p>
-                  </div>
+              {insightWhat && !insightGenerating && (
+                <div className="animate-slide-up bg-white/60 p-5 rounded-xl border-l-4 border-color-accent shadow-sm relative overflow-hidden">
+                  <h5 className="font-bold text-xs text-color-accent mb-2 uppercase tracking-wide">1-Sentence AI Intervention</h5>
+                  <p className="text-sm text-color-text font-serif font-medium leading-relaxed">"{insightWhat}"</p>
                 </div>
               )}
             </div>

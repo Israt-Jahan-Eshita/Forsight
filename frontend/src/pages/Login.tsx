@@ -3,30 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { useAuth, type Role } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { UserCheck, Settings, BookOpen } from 'lucide-react';
 
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [roleSelect, setRoleSelect] = useState<Role>('teacher');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [modeNotice, setModeNotice] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeLogin = async (loginEmail: string, loginPass: string) => {
     setLoading(true);
     setErrorMsg('');
-    setModeNotice('');
     
     try {
-      // 1. Attempt actual Spring Boot API Authentication
-      await login(email, password);
+      await login(loginEmail, loginPass);
       setLoading(false);
       
-      // Redirect based on the actual authenticated user's role
       const savedUser = JSON.parse(localStorage.getItem('fs_user') || '{}');
       const actualRole = (savedUser.role || 'STUDENT').toLowerCase();
       
@@ -34,25 +29,14 @@ export function Login() {
       else navigate('/dashboard');
       
     } catch (err: any) {
-      // 2. Handle network offline or auth failure
-      const isNetworkError = err.message.includes('Failed to fetch') || err.message.includes('NetworkError');
-      
-      if (isNetworkError) {
-        // Automatically fallback to offline Preview Mode for rapid developer testing
-        setModeNotice('Spring Boot server offline. Launching in Offline Preview Mode...');
-        
-        setTimeout(() => {
-          login(roleSelect || 'teacher'); // Trigger simple preview login
-          setLoading(false);
-          if (roleSelect === 'admin') navigate('/admin');
-          else navigate('/dashboard');
-        }, 1500);
-      } else {
-        // Actual authentication refusal
-        setErrorMsg(err.message || 'Invalid email or password');
-        setLoading(false);
-      }
+      setErrorMsg(err.message || 'Invalid email or password. Is the backend running?');
+      setLoading(false);
     }
+  };
+
+  const handleManualLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeLogin(email, password);
   };
 
   return (
@@ -69,13 +53,32 @@ export function Login() {
           </div>
         )}
 
-        {modeNotice && (
-          <div className="mb-4 p-3 bg-color-warning/15 text-color-accent font-medium rounded-xl text-center text-xs neu-inset border-l-4 border-color-warning animate-pulse-soft">
-            {modeNotice}
+        <div className="mb-8 grid grid-cols-2 gap-4">
+          <div 
+            onClick={() => executeLogin('judge@forsight.com', 'judge123')}
+            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center"
+          >
+            <div className="mb-2"><UserCheck className="w-8 h-8 text-color-accent mx-auto" /></div>
+            <div className="text-xs font-bold text-color-accent uppercase">Judge View</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono">judge@forsight.com</div>
           </div>
-        )}
+          <div 
+            onClick={() => executeLogin('admin@forsight.com', 'admin123')}
+            className="neu-raised bg-color-surface p-4 rounded-xl border border-white/50 cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95 text-center"
+          >
+            <div className="mb-2"><Settings className="w-8 h-8 text-color-accent mx-auto" /></div>
+            <div className="text-xs font-bold text-color-accent uppercase">Admin View</div>
+            <div className="text-[10px] text-color-muted mt-1 font-mono">admin@forsight.com</div>
+          </div>
+        </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex-1 h-px bg-black/10"></div>
+          <div className="text-xs font-bold text-color-muted uppercase">OR MANUAL LOGIN</div>
+          <div className="flex-1 h-px bg-black/10"></div>
+        </div>
+
+        <form onSubmit={handleManualLogin} className="flex flex-col gap-5">
           <Input 
             label="Email" 
             type="email"
@@ -92,37 +95,25 @@ export function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required 
           />
-          
-          {/* MOCK/FALLBACK: Dropdown to select role for previewing when backend is offline */}
-          <div className="flex flex-col gap-1.5 w-full mt-2">
-            <label className="text-xs font-semibold text-color-muted ml-1 uppercase tracking-wider">
-              Offline Preview Target Role
-            </label>
-            <select 
-              value={roleSelect || ''}
-              onChange={(e) => setRoleSelect(e.target.value as Role)}
-              className="neu-inset w-full px-4 py-2.5 text-color-text bg-color-surface focus:outline-none focus:ring-2 focus:ring-accent transition-all cursor-pointer rounded-xl font-medium"
-            >
-              <option value="admin">Admin Dashboard</option>
-              <option value="teacher">Teacher Portal</option>
-              <option value="student">Student Portal</option>
-            </select>
-            <span className="text-[10px] text-color-muted ml-1">
-              * Note: If the backend is running, this dropdown is bypassed and actual DB credentials are used.
-            </span>
-          </div>
 
           <Button 
             type="submit" 
-            className="w-full mt-4 h-12 text-base shadow-[4px_4px_8px_var(--shadow-dark),-4px_-4px_8px_var(--shadow-light)]" 
+            className="w-full h-12 text-base font-bold shadow-sm" 
             disabled={loading}
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-xs text-color-muted">Contact your admin if you don't have access.</p>
+        <div className="mt-6">
+          <Button 
+            type="button" 
+            variant="secondary"
+            onClick={() => navigate('/docs')}
+            className="w-full h-12 text-sm font-black italic font-serif shadow-sm bg-color-background text-color-accent border-2 border-color-accent/20 hover:border-color-accent hover:bg-color-accent hover:text-white transition-all flex items-center justify-center gap-2" 
+          >
+            <BookOpen className="w-4 h-4" /> View Pitch Deck & Tech Docs (/docs)
+          </Button>
         </div>
       </CardContent>
     </Card>

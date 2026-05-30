@@ -221,7 +221,7 @@ public class AiController {
     @PostMapping("/intervention-insight")
     public ResponseEntity<?> generateInterventionInsight(@RequestBody PromptRequest request) {
         try {
-            String prompt = "You are an expert teacher's assistant AI. Based on the following student performance data, provide a single, actionable, 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
+            String prompt = "You are an expert teacher's assistant AI. Based on the following student performance data and behavioral flags, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
             String response = aiService.generateQuiz(prompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

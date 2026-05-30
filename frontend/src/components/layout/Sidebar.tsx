@@ -14,6 +14,12 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const { role, logout } = useAuth();
+  
+  const handleLinkClick = () => {
+    if (window.innerWidth < 768 && onClose) {
+      onClose();
+    }
+  };
 
   const teacherNav = [
     { label: 'Home', path: '/dashboard', icon: LayoutDashboard },
@@ -43,17 +49,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <aside className={cn(
-      "h-full flex flex-col p-4 bg-color-background neu-inset rounded-r-[12px] shadow-[inset_-2px_0_4px_rgba(0,0,0,0.05)] shrink-0 transition-all duration-300 ease-in-out",
+      "h-full flex flex-col p-3 bg-color-background neu-inset rounded-r-[12px] shadow-[inset_-2px_0_4px_rgba(0,0,0,0.05)] shrink-0 transition-all duration-300 ease-in-out relative",
       "fixed md:relative inset-y-0 left-0 z-30",
-      isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-20 w-64"
+      isOpen ? "translate-x-0 w-48" : "-translate-x-full md:translate-x-0 md:w-16 w-48"
     )}>
-      <div className={cn("flex items-center justify-between px-4 py-6 mb-4", !isOpen && "md:justify-center")}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-color-text flex items-center justify-center neu-raised shrink-0">
-            <span className="text-white font-bold text-sm font-serif">F</span>
+      <div className={cn("flex items-center justify-between px-3 py-4 mb-3", !isOpen && "md:justify-center")}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-color-surface flex items-center justify-center neu-raised shrink-0">
+            <span className="text-color-accent font-bold text-sm font-serif">F</span>
           </div>
           <span className={cn(
-            "text-xl font-bold text-color-text font-serif tracking-wide transition-all duration-200", 
+            "text-base font-bold text-color-text tracking-wide transition-all duration-200", 
             !isOpen && "md:opacity-0 md:w-0 md:hidden"
           )}>
             Forsight
@@ -75,9 +81,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               key={item.path}
               to={item.path}
-              onClick={onClose}
+              onClick={handleLinkClick}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-all duration-200 neu-focus',
+                'group flex items-center gap-3 px-3 py-3 rounded-[12px] font-semibold text-sm transition-all duration-300',
                 isActive
                   ? 'neu-inset text-color-accent'
                   : 'text-color-muted neu-raised hover:text-color-text',
@@ -85,10 +91,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
               title={!isOpen ? item.label : undefined}
             >
-              <item.icon className="w-5 h-5 shrink-0" />
+              <item.icon className={cn(
+                "w-[16px] h-[16px] shrink-0 transition-transform duration-300",
+                !isActive && "group-hover:scale-110"
+              )} />
               <span className={cn(
-                "transition-all duration-200 whitespace-nowrap", 
-                !isOpen && "md:opacity-0 md:w-0 md:hidden"
+                "transition-all duration-300 whitespace-nowrap", 
+                !isOpen && "md:opacity-0 md:w-0 md:hidden",
+                !isActive && "group-hover:translate-x-1"
               )}>
                 {item.label}
               </span>
@@ -101,14 +111,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <button 
           onClick={logout}
           className={cn(
-            "flex w-full items-center gap-3 px-4 py-3 rounded-[12px] font-medium text-color-muted transition-all neu-raised hover:text-color-danger neu-focus cursor-pointer",
+            "group flex w-full items-center gap-3 px-3 py-3 rounded-[12px] font-semibold text-sm text-color-muted transition-all neu-raised hover:text-color-danger cursor-pointer",
             !isOpen && "md:justify-center md:px-0"
           )}
           title={!isOpen ? "Logout" : undefined}
         >
-          <LogOut className="w-5 h-5 shrink-0" />
+          <LogOut className="w-[16px] h-[16px] shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
           <span className={cn(
-            "transition-all duration-200 whitespace-nowrap", 
+            "transition-all duration-300 whitespace-nowrap", 
             !isOpen && "md:opacity-0 md:w-0 md:hidden"
           )}>
             Logout

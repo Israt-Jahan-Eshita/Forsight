@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -83,7 +84,7 @@ export function TeacherSubmissions() {
       if (!token || token === 'mock-jwt-token') {
         return;
       }
-      const response = await fetch('http://localhost:8080/api/submissions', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -134,7 +135,7 @@ export function TeacherSubmissions() {
     setStatusMsg('');
 
     try {
-      const response = await fetch(`http://localhost:8080/api/submissions/${selectedGroup.activeSubmission.id}/grade`, {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${selectedGroup.activeSubmission.id}/grade`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +193,7 @@ export function TeacherSubmissions() {
             {sub.answerImageUrl && (
               <div className="mt-4">
                 <p className="text-xs font-bold text-color-muted uppercase mb-2">Attached Document:</p>
-                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `http://localhost:8080${sub.answerImageUrl}`} alt="Student attachment" className="max-w-full rounded-xl border border-black/10 shadow-sm" />
+                <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `${API_BASE_URL}${sub.answerImageUrl}`} alt="Student attachment" className="max-w-full rounded-xl border border-black/10 shadow-sm" />
               </div>
             )}
           </Card>
@@ -251,7 +252,7 @@ export function TeacherSubmissions() {
                   <p className="text-xs text-color-text whitespace-pre-wrap">{sub.answerText}</p>
                 )}
                 {sub.answerImageUrl && (
-                  <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `http://localhost:8080${sub.answerImageUrl}`} alt="History attachment" className="max-w-[200px] rounded-lg border border-black/10" />
+                  <img src={sub.answerImageUrl.startsWith('http') ? sub.answerImageUrl : `${API_BASE_URL}${sub.answerImageUrl}`} alt="History attachment" className="max-w-[200px] rounded-lg border border-black/10" />
                 )}
               </div>
             )}
@@ -331,7 +332,7 @@ export function TeacherSubmissions() {
           <div className="absolute inset-0 flex flex-col">
             
             {/* Header */}
-            <div className="p-6 border-b border-black/5 flex items-center justify-between bg-color-surface/50 backdrop-blur-md z-10 shrink-0">
+            <div className="p-6 border-b border-black/5 flex items-center justify-between bg-color-surface/50 backdrop-blur-md shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-color-text">{selectedGroup.activeSubmission.quiz.title}</h2>
                 <div className="flex items-center gap-3 mt-1">

@@ -24,6 +24,9 @@ public class MessageController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.forsight.repository.NotificationRepository notificationRepository;
+
     public static class MessageRequest {
         private Long receiverId;
         private String content;
@@ -59,6 +62,19 @@ public class MessageController {
                     .build();
 
             Message savedMessage = messageRepository.save(message);
+
+            // Create real dynamic notification for the receiver
+            com.forsight.model.Notification notification = com.forsight.model.Notification.builder()
+                    .user(receiver)
+                    .title("New Message")
+                    .message("You have a new message from " + sender.getName())
+                    .type("info")
+                    .link("/messages")
+                    .timestamp(LocalDateTime.now())
+                    .isRead(false)
+                    .build();
+            notificationRepository.save(notification);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(savedMessage);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

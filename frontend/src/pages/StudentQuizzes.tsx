@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -20,6 +21,7 @@ interface Quiz {
   questionsJson: string;
   questionText?: string;
   questionImageUrl?: string;
+  resource?: { id: number };
 }
 
 export function StudentQuizzes() {
@@ -45,6 +47,9 @@ export function StudentQuizzes() {
   // Graded / Result state
   const [showResult, setShowResult] = useState(false);
   const [gradedResult, setGradedResult] = useState<any>(null);
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+
+  const [quizStartTime, setQuizStartTime] = useState<string>('');
 
   useEffect(() => {
     fetchQuizzesAndSubmissions();
@@ -62,15 +67,17 @@ export function StudentQuizzes() {
           const qz = mockQz.find(q => q.id === selectedQuizId);
           if (qz) {
             setActiveQuiz(qz);
+            setQuizStartTime(new Date().toISOString());
             const parsedQ = JSON.parse(qz.questionsJson || '[]');
             setQuestions(parsedQ);
             setSelectedAnswers(new Array(parsedQ.length).fill(''));
 
             const localSub = localStorage.getItem('fs_mock_submissions');
             const submissions = localSub ? JSON.parse(localSub) : [];
-            const existingSub = submissions.find((s: any) => s.quiz.id === selectedQuizId);
-            if (existingSub) {
-              setGradedResult(existingSub);
+            const existingSubs = submissions.filter((s: any) => s.quiz.id === selectedQuizId).sort((a: any, b: any) => b.id - a.id);
+            if (existingSubs.length > 0) {
+              setAllSubmissions(existingSubs);
+              setGradedResult(existingSubs[0]);
               setShowResult(true);
             }
           }
@@ -79,28 +86,30 @@ export function StudentQuizzes() {
       }
 
       // Fetch active quizzes
-      const response = await fetch('http://localhost:8080/api/quizzes', {
+      const response = await fetch(`${API_BASE_URL}/api/quizzes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data: Quiz[] = await response.json();
 
       // Check if student has already submitted this specific quiz
       if (selectedQuizId) {
-        const subResponse = await fetch('http://localhost:8080/api/submissions', {
+        const subResponse = await fetch(`${API_BASE_URL}/api/submissions`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const submissions = await subResponse.json();
-        const existingSub = submissions.find((s: any) => s.quiz.id === selectedQuizId);
+        const existingSubs = submissions.filter((s: any) => s.quiz.id === selectedQuizId).sort((a: any, b: any) => b.id - a.id);
         
         const qz = data.find(q => q.id === selectedQuizId);
         if (qz) {
           setActiveQuiz(qz);
+          setQuizStartTime(new Date().toISOString());
           const parsedQ = JSON.parse(qz.questionsJson || '[]') as Question[];
           setQuestions(parsedQ);
           setSelectedAnswers(new Array(parsedQ.length).fill(''));
 
-          if (existingSub) {
-            setGradedResult(existingSub);
+          if (existingSubs.length > 0) {
+            setAllSubmissions(existingSubs);
+            setGradedResult(existingSubs[0]);
             setShowResult(true);
           }
         }
@@ -158,6 +167,11 @@ export function StudentQuizzes() {
       if (answerImage) formData.append('file', answerImage);
       formData.append('score', score.toString());
       formData.append('maxScore', (hasQuestions ? questions.length : 10).toString());
+      if (quizStartTime) formData.append('startTime', quizStartTime);
+      
+      const resourceId = activeQuiz?.resource?.id;
+      const resourceOpened = resourceId ? localStorage.getItem(`opened_resource_${resourceId}`) === 'true' : false;
+      formData.append('resourceOpened', resourceOpened ? 'true' : 'false');
 
       if (!token || token === 'mock-jwt-token') {
         const mockSub = {
@@ -173,16 +187,17 @@ export function StudentQuizzes() {
         
         const localSub = localStorage.getItem('fs_mock_submissions');
         const list = localSub ? JSON.parse(localSub) : [];
-        const updated = [...list.filter((s: any) => s.quiz.id !== activeQuiz?.id), mockSub];
+        const updated = [...list.filter((s: any) => s.quiz.id !== activeQuiz?.id), mockSub]; // Replace mock
         localStorage.setItem('fs_mock_submissions', JSON.stringify(updated));
         
+        setAllSubmissions([mockSub]);
         setGradedResult(mockSub);
         setShowResult(true);
         setSubmitting(false);
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/submissions', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -192,6 +207,7 @@ export function StudentQuizzes() {
 
       if (response.ok) {
         const savedSub = await response.json();
+        setAllSubmissions(prev => [savedSub, ...prev]);
         setGradedResult(savedSub);
         setShowResult(true);
       } else {
@@ -212,10 +228,52 @@ export function StudentQuizzes() {
     
     return (
       <div className="animate-fade-in pb-20 max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => navigate('/resources')} className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-black/5 pb-4">
+          <Button variant="secondary" size="sm" onClick={() => navigate('/resources')} className="flex items-center gap-1 shrink-0 self-start sm:self-auto">
             <ChevronLeft className="w-4 h-4" /> Back to shelf
           </Button>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            {allSubmissions.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-color-muted uppercase tracking-wider hidden sm:inline">History:</span>
+                <select 
+                  id="submission-history"
+                  value={gradedResult?.id || ''}
+                  onChange={(e) => {
+                    const selected = allSubmissions.find(s => s.id.toString() === e.target.value);
+                    if (selected) setGradedResult(selected);
+                  }}
+                  className="bg-color-surface neu-inset text-xs font-bold text-color-text px-3 py-1.5 rounded-lg border-none focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer max-w-[180px]"
+                >
+                  {allSubmissions.map((sub, idx) => {
+                    const date = new Date(sub.submissionDate);
+                    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                    return (
+                      <option key={sub.id} value={sub.id}>
+                        Attempt {allSubmissions.length - idx} • {formattedDate}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+            <Button 
+              size="sm" 
+              className="bg-color-accent text-white font-bold shrink-0"
+              onClick={() => {
+                setShowResult(false);
+                setGradedResult(null);
+                setCurrentQ(0);
+                setSelectedAnswers(new Array(questions.length).fill(''));
+                setAnswerText('');
+                setAnswerImage(null);
+                setQuizStartTime(new Date().toISOString());
+              }}
+            >
+              Take Again
+            </Button>
+          </div>
         </div>
 
         <div className="text-center py-6">
@@ -226,7 +284,7 @@ export function StudentQuizzes() {
                 cx="80" cy="80" r="70" fill="none" 
                 stroke={isGraded ? "var(--color-success)" : "var(--color-warning)"} strokeWidth="12" 
                 strokeDasharray="440" 
-                strokeDashoffset={440 - (440 * (gradedResult.score / gradedResult.maxScore))} 
+                strokeDashoffset={440 - (440 * (gradedResult.score / (gradedResult.maxScore || 1)))} 
                 className="transition-all duration-1000 ease-out"
               />
             </svg>
@@ -242,6 +300,7 @@ export function StudentQuizzes() {
           </div>
           <h1 className="text-2xl font-bold font-serif text-color-text">Practice Assessment Complete!</h1>
           <p className="text-xs text-color-muted mt-1">Review your results and instructor feedback below.</p>
+
         </div>
 
         {/* Teacher Feedback Section */}
@@ -284,7 +343,7 @@ export function StudentQuizzes() {
               {gradedResult.answerImageUrl && (
                 <div>
                   <h4 className="text-xs font-bold text-color-muted uppercase mb-2">Your Uploaded Image</h4>
-                  <img src={`http://localhost:8080${gradedResult.answerImageUrl}`} alt="Submitted Work" className="max-w-full rounded-lg border border-black/10" />
+                  <img src={`${API_BASE_URL}${gradedResult.answerImageUrl}`} alt="Submitted Work" className="max-w-full rounded-lg border border-black/10" />
                 </div>
               )}
             </Card>
@@ -380,7 +439,7 @@ export function StudentQuizzes() {
               )}
               {activeQuiz.questionImageUrl && (
                 <div>
-                  <img src={`http://localhost:8080${activeQuiz.questionImageUrl}`} alt="Question Prompt" className="max-w-full rounded-lg border border-black/10 mx-auto" />
+                  <img src={`${API_BASE_URL}${activeQuiz.questionImageUrl}`} alt="Question Prompt" className="max-w-full rounded-lg border border-black/10 mx-auto" />
                 </div>
               )}
               

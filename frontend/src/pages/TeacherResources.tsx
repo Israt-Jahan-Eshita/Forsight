@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 import { UploadCloud, FileText, Download, Trash2, Bot, ChevronDown, ChevronUp, FileQuestion, Image as ImageIcon, Eye, X, BookOpen, Plus, FolderOpen, Users } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -102,7 +103,7 @@ export function TeacherResources() {
         if (saved) setCourses(JSON.parse(saved));
         return;
       }
-      const response = await fetch('http://localhost:8080/api/courses/teacher', {
+      const response = await fetch(`${API_BASE_URL}/api/courses/teacher`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -120,7 +121,7 @@ export function TeacherResources() {
         if (saved) setResources(JSON.parse(saved));
         return;
       }
-      const response = await fetch('http://localhost:8080/api/resources', {
+      const response = await fetch(`${API_BASE_URL}/api/resources`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -138,7 +139,7 @@ export function TeacherResources() {
         if (saved) setQuizzes(JSON.parse(saved));
         return;
       }
-      const response = await fetch('http://localhost:8080/api/quizzes', {
+      const response = await fetch(`${API_BASE_URL}/api/quizzes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -176,7 +177,7 @@ export function TeacherResources() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/courses', {
+      const response = await fetch(`${API_BASE_URL}/api/courses`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -213,7 +214,7 @@ export function TeacherResources() {
         setCourses(updated);
         return;
       }
-      const response = await fetch(`http://localhost:8080/api/courses/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/courses/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -260,7 +261,7 @@ export function TeacherResources() {
       formData.append('description', uploadDesc);
       formData.append('courseId', courseId.toString());
 
-      const response = await fetch('http://localhost:8080/api/resources/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/resources/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -291,7 +292,7 @@ export function TeacherResources() {
         setResources(updated);
         return;
       }
-      const response = await fetch(`http://localhost:8080/api/resources/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/resources/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -306,7 +307,7 @@ export function TeacherResources() {
       alert(`Download trigger for: ${name} (Preview Mode)`);
       return;
     }
-    window.open(`http://localhost:8080/api/resources/${id}/download?access_token=${token}`, '_blank');
+    window.open(`${API_BASE_URL}/api/resources/${id}/download?access_token=${token}`, '_blank');
   };
 
   // Inline Quiz Logic
@@ -331,7 +332,7 @@ export function TeacherResources() {
           ]});
           return;
         }
-        const response = await fetch(`http://localhost:8080/api/enrollments/course/${courseId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/enrollments/course/${courseId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -353,7 +354,7 @@ export function TeacherResources() {
     setGenerating(true);
     setQuizStatusMsg('');
     try {
-      const response = await fetch('http://localhost:8080/api/ai/generate-quiz', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate-quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -409,7 +410,7 @@ export function TeacherResources() {
       if (questionText) formData.append('questionText', questionText);
       if (questionImage) formData.append('file', questionImage);
 
-      const response = await fetch('http://localhost:8080/api/quizzes', {
+      const response = await fetch(`${API_BASE_URL}/api/quizzes`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -438,7 +439,7 @@ export function TeacherResources() {
         setQuizzes(updated);
         return;
       }
-      const response = await fetch(`http://localhost:8080/api/quizzes/${quizId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/quizzes/${quizId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -491,6 +492,9 @@ export function TeacherResources() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                      <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); toggleStudentsPanel(course.id); }} className="p-2 border-none bg-black/5 hover:bg-black/10 text-color-text rounded-xl" title="View Students">
+                        <Users className="w-4 h-4" />
+                      </Button>
                       <Button variant="icon" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteCourse(course.id); }} className="bg-color-danger/10 text-color-danger hover:bg-color-danger/20 rounded-xl p-2 border-none" title="Delete Course">
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -757,12 +761,39 @@ export function TeacherResources() {
             </div>
             <div className="flex-1 w-full bg-color-background overflow-hidden relative p-4">
               <iframe 
-                src={token && token !== 'mock-jwt-token' ? `http://localhost:8080/api/resources/${previewResource.id}/view?access_token=${token}` : ''}
+                src={token && token !== 'mock-jwt-token' ? `${API_BASE_URL}/api/resources/${previewResource.id}/view?access_token=${token}` : ''}
                 className="w-full h-full border-0 rounded-xl bg-white shadow-inner"
                 title={previewResource.name}
               />
               {(!token || token === 'mock-jwt-token') && (
                  <div className="absolute inset-0 flex items-center justify-center text-color-muted">Preview not available in mock mode.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Enrolled Students Modal */}
+      {expandedStudentsCourseId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-color-surface w-full max-w-lg max-h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden relative animate-scale-in">
+            <div className="flex items-center justify-between p-4 border-b border-black/10">
+              <h3 className="font-bold text-lg font-serif flex items-center gap-2"><Users className="w-5 h-5 text-color-accent" /> Enrolled Students</h3>
+              <button onClick={() => setExpandedStudentsCourseId(null)} className="p-2 bg-black/5 hover:bg-color-danger/10 text-color-text hover:text-color-danger rounded-xl transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              {(courseStudents[expandedStudentsCourseId] || []).length === 0 ? (
+                <p className="text-center text-color-muted text-sm italic py-8">No students enrolled yet.</p>
+              ) : (
+                (courseStudents[expandedStudentsCourseId] || []).map((enrollment: any) => (
+                  <div key={enrollment.id} className="p-3 bg-color-background rounded-xl border border-black/5 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-sm text-color-text">{enrollment.student?.name}</h4>
+                      <p className="text-[10px] text-color-muted">{enrollment.student?.email}</p>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

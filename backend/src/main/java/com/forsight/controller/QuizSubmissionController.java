@@ -76,6 +76,8 @@ public class QuizSubmissionController {
             @RequestParam(value = "score", required = false) Integer score,
             @RequestParam(value = "maxScore", required = false) Integer maxScore,
             @RequestParam(value = "resubmissionNote", required = false) String resubmissionNote,
+            @RequestParam(value = "startTime", required = false) String startTimeStr,
+            @RequestParam(value = "resourceOpened", required = false) Boolean resourceOpened,
             @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
         try {
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -106,6 +108,15 @@ public class QuizSubmissionController {
                 answerImageUrl = fileUploadService.storeFile(file);
             }
 
+            LocalDateTime startTime = null;
+            if (startTimeStr != null && !startTimeStr.isEmpty()) {
+                try {
+                    startTime = java.time.LocalDateTime.parse(startTimeStr, java.time.format.DateTimeFormatter.ISO_DATE_TIME);
+                } catch (Exception e) {
+                    // Ignore parse error, startTime remains null
+                }
+            }
+
             QuizSubmission submission = QuizSubmission.builder()
                     .quiz(quiz)
                     .student(student)
@@ -117,6 +128,8 @@ public class QuizSubmissionController {
                     .status("PENDING")
                     .attemptNumber(attemptNumber)
                     .resubmissionNote(resubmissionNote)
+                    .startTime(startTime)
+                    .resourceOpened(resourceOpened)
                     .build();
 
             QuizSubmission savedSubmission = quizSubmissionRepository.save(submission);
