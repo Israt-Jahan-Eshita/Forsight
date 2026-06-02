@@ -181,27 +181,27 @@ public class DataSeeder implements CommandLineRunner {
         // Submissions to generate trend & risk data
         
         // Sara (Safe - High Engagement, Good Scores, On Time)
-        addSubmission(q1, s1, today.minusDays(5), 95, 100, 1, true, 3600);
-        addSubmission(q2, s1, today.minusDays(2), 92, 100, 1, true, 4000);
-        addSubmission(q3, s1, today.minusDays(1), 98, 100, 1, true, 4500);
+        addSubmission(q1, s1, today.minusDays(5), 95, 100, 1, true, 3600, "GRADED");
+        addSubmission(q2, s1, today.minusDays(2), 92, 100, 1, true, 4000, "GRADED");
+        addSubmission(q3, s1, today.minusDays(1), 98, 100, 1, true, 4500, "GRADED");
 
         // Vikram (Critical - Falling grades, skipping resources, speed-running, LATE submissions)
-        addSubmission(q1, s2, today.minusDays(3), 85, 100, 1, true, 2000);  // Late (due was minusDays(4))
-        addSubmission(q2, s2, today, 45, 100, 1, false, 300);               // Late (due was minusDays(1)), skipped resource, speedrun
-        addSubmission(q3, s2, today.plusDays(3), 30, 100, 2, false, 250);    // Late (due was plusDays(1)), failed, multiple attempts
+        addSubmission(q1, s2, today.minusDays(3), 85, 100, 1, true, 2000, "GRADED");  // Late (due was minusDays(4))
+        addSubmission(q2, s2, today, 45, 100, 1, false, 300, "GRADED");               // Late (due was minusDays(1)), skipped resource, speedrun
+        addSubmission(q3, s2, today.plusDays(3), 30, 100, 2, false, 250, "PENDING");    // Late (due was plusDays(1)), failed, multiple attempts, NEEDS REVIEW
 
         // Aarav (Watch - Average but struggling slightly)
-        addSubmission(q1, s3, today.minusDays(5), 75, 100, 1, true, 3000);
-        addSubmission(q2, s3, today.minusDays(2), 70, 100, 2, true, 3500);
+        addSubmission(q1, s3, today.minusDays(5), 75, 100, 1, true, 3000, "GRADED");
+        addSubmission(q2, s3, today.minusDays(2), 70, 100, 2, true, 3500, "GRADED");
         
         // Neha (Safe - Improving)
-        addSubmission(q1, s4, today.minusDays(6), 65, 100, 1, true, 4000);
-        addSubmission(q2, s4, today.minusDays(3), 85, 100, 1, true, 3800);
-        addSubmission(q3, s4, today.minusDays(0), 90, 100, 1, true, 4200);
+        addSubmission(q1, s4, today.minusDays(6), 65, 100, 1, true, 4000, "GRADED");
+        addSubmission(q2, s4, today.minusDays(3), 85, 100, 1, true, 3800, "PENDING"); // Needs Review
+        addSubmission(q3, s4, today.minusDays(0), 90, 100, 1, true, 4200, "GRADED");
 
         // Rohan (Safe)
-        addSubmission(q1, s5, today.minusDays(5), 88, 100, 1, true, 3200);
-        addSubmission(q2, s5, today.minusDays(4), 85, 100, 1, true, 3100);
+        addSubmission(q1, s5, today.minusDays(5), 88, 100, 1, true, 3200, "GRADED");
+        addSubmission(q2, s5, today.minusDays(4), 85, 100, 1, true, 3100, "GRADED");
         
         System.out.println("Seeded realistic hackathon demo data with embedded PDFs.");
     }
@@ -278,13 +278,13 @@ public class DataSeeder implements CommandLineRunner {
         });
     }
 
-    private void addSubmission(Quiz q, User s, LocalDateTime submitDate, Integer score, Integer max, int attempt, boolean openedRes, long timeSpentSecs) {
+    private void addSubmission(Quiz q, User s, LocalDateTime submitDate, Integer score, Integer max, int attempt, boolean openedRes, long timeSpentSecs, String status) {
         QuizSubmission sub = new QuizSubmission();
         sub.setQuiz(q);
         sub.setStudent(s);
         sub.setSubmissionDate(submitDate);
         sub.setStartTime(submitDate.minusSeconds(timeSpentSecs));
-        sub.setStatus("GRADED");
+        sub.setStatus(status);
         sub.setScore(score);
         sub.setMaxScore(max);
         sub.setAttemptNumber(attempt);
