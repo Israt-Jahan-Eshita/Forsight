@@ -35,7 +35,7 @@ function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
         </Route>
-        <Route path="*" element={<Navigate to="/docs" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }

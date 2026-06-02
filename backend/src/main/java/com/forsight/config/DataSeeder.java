@@ -89,6 +89,36 @@ public class DataSeeder implements CommandLineRunner {
         User s4 = createStudent("Neha Gupta", "neha@forsight.com");
         User s5 = createStudent("Rohan Sharma", "rohan@forsight.com");
 
+        // Generate sample PDF content so preview and AI extraction always work
+        byte[] physicsPdf = generateSamplePdf("Kinematics Study Guide",
+                "Chapter 1: Motion in One Dimension\n\n" +
+                "Kinematics is the branch of mechanics that describes the motion of objects without considering the forces that cause them.\n\n" +
+                "Key Equations:\n" +
+                "1. v = u + at (Final velocity)\n" +
+                "2. s = ut + (1/2)at^2 (Displacement)\n" +
+                "3. v^2 = u^2 + 2as (Velocity-displacement relation)\n\n" +
+                "Where:\n" +
+                "- u = initial velocity (m/s)\n" +
+                "- v = final velocity (m/s)\n" +
+                "- a = acceleration (m/s^2)\n" +
+                "- t = time (s)\n" +
+                "- s = displacement (m)\n\n" +
+                "Example: A ball is dropped from rest (u=0) under gravity (a=9.8 m/s^2) for 5 seconds.\n" +
+                "Final velocity: v = 0 + 9.8 x 5 = 49 m/s\n" +
+                "Distance fallen: s = 0 + 0.5 x 9.8 x 25 = 122.5 m");
+
+        byte[] calculusPdf = generateSamplePdf("Calculus Notes",
+                "Chapter 1: Derivatives\n\n" +
+                "The derivative of a function measures the rate of change of the function with respect to its variable.\n\n" +
+                "Basic Rules:\n" +
+                "1. Power Rule: d/dx [x^n] = n*x^(n-1)\n" +
+                "2. Sum Rule: d/dx [f(x) + g(x)] = f'(x) + g'(x)\n" +
+                "3. Product Rule: d/dx [f(x)*g(x)] = f'(x)*g(x) + f(x)*g'(x)\n" +
+                "4. Chain Rule: d/dx [f(g(x))] = f'(g(x)) * g'(x)\n\n" +
+                "Example: Find the derivative of 3x^2 + 2x\n" +
+                "Using the power rule: d/dx [3x^2] = 6x, d/dx [2x] = 2\n" +
+                "Answer: 6x + 2");
+
         // Courses
         Course c1 = new Course(null, "Physics Fundamentals", "Core physics concepts", "Class 10", teacher);
         Course c2 = new Course(null, "Advanced Mathematics", "Calculus and Algebra", "Class 10", teacher);
@@ -100,46 +130,54 @@ public class DataSeeder implements CommandLineRunner {
             enrollmentRepository.save(new Enrollment(s, teacher, c2, "Enrolled", LocalDateTime.now().minusDays(30)));
         }
 
-        // Resources
+        // Resources with embedded PDF data
         Resource r1 = Resource.builder()
-                .title("Kinematics PDF").description("Study guide")
+                .title("Kinematics PDF").description("Complete study guide covering motion equations and kinematic analysis")
                 .fileName("kinematics.pdf").fileType("application/pdf")
                 .teacher(teacher).course(c1).uploadDate(LocalDateTime.now())
                 .build();
+        r1.setFileData(physicsPdf);
+
         Resource r2 = Resource.builder()
-                .title("Calculus Notes").description("Study guide")
+                .title("Calculus Notes").description("Comprehensive notes on derivatives and differentiation rules")
                 .fileName("calc.pdf").fileType("application/pdf")
                 .teacher(teacher).course(c2).uploadDate(LocalDateTime.now())
                 .build();
+        r2.setFileData(calculusPdf);
+
         resourceRepository.saveAll(List.of(r1, r2));
 
-        // Quizzes
+        // Quizzes with due dates
+        LocalDateTime today = LocalDateTime.now();
+
         Quiz q1 = Quiz.builder()
                 .title("Kinematics Quiz 1").description("Basic motion")
-                .teacher(teacher).resource(r1).createdDate(LocalDateTime.now())
+                .teacher(teacher).resource(r1).createdDate(today.minusDays(7))
+                .dueDate(today.minusDays(4))
                 .build();
         Quiz q2 = Quiz.builder()
                 .title("Kinematics Quiz 2").description("Advanced motion")
-                .teacher(teacher).resource(r1).createdDate(LocalDateTime.now())
+                .teacher(teacher).resource(r1).createdDate(today.minusDays(4))
+                .dueDate(today.minusDays(1))
                 .build();
         Quiz q3 = Quiz.builder()
                 .title("Calculus Midterm").description("Derivatives")
-                .teacher(teacher).resource(r2).createdDate(LocalDateTime.now())
+                .teacher(teacher).resource(r2).createdDate(today.minusDays(3))
+                .dueDate(today.plusDays(1))
                 .build();
         quizRepository.saveAll(List.of(q1, q2, q3));
 
         // Submissions to generate trend & risk data
-        LocalDateTime today = LocalDateTime.now();
         
-        // Sara (Safe - High Engagement, Good Scores)
+        // Sara (Safe - High Engagement, Good Scores, On Time)
         addSubmission(q1, s1, today.minusDays(5), 95, 100, 1, true, 3600);
         addSubmission(q2, s1, today.minusDays(2), 92, 100, 1, true, 4000);
         addSubmission(q3, s1, today.minusDays(1), 98, 100, 1, true, 4500);
 
-        // Vikram (Critical - Falling grades, skipping resources, speed-running)
-        addSubmission(q1, s2, today.minusDays(6), 85, 100, 1, true, 2000); // Started okay
-        addSubmission(q2, s2, today.minusDays(3), 45, 100, 1, false, 300); // Grade drop, skipped resource, speedrun
-        addSubmission(q3, s2, today.minusDays(1), 30, 100, 2, false, 250); // Failed, multiple attempts, speedrun
+        // Vikram (Critical - Falling grades, skipping resources, speed-running, LATE submissions)
+        addSubmission(q1, s2, today.minusDays(3), 85, 100, 1, true, 2000);  // Late (due was minusDays(4))
+        addSubmission(q2, s2, today, 45, 100, 1, false, 300);               // Late (due was minusDays(1)), skipped resource, speedrun
+        addSubmission(q3, s2, today.plusDays(3), 30, 100, 2, false, 250);    // Late (due was plusDays(1)), failed, multiple attempts
 
         // Aarav (Watch - Average but struggling slightly)
         addSubmission(q1, s3, today.minusDays(5), 75, 100, 1, true, 3000);
@@ -154,7 +192,68 @@ public class DataSeeder implements CommandLineRunner {
         addSubmission(q1, s5, today.minusDays(5), 88, 100, 1, true, 3200);
         addSubmission(q2, s5, today.minusDays(4), 85, 100, 1, true, 3100);
         
-        System.out.println("Seeded realistic hackathon demo data.");
+        System.out.println("Seeded realistic hackathon demo data with embedded PDFs.");
+    }
+
+    /**
+     * Programmatically generates a simple PDF document using Apache PDFBox.
+     * This ensures the demo always has working preview and AI text extraction.
+     */
+    private byte[] generateSamplePdf(String title, String content) {
+        try {
+            org.apache.pdfbox.pdmodel.PDDocument document = new org.apache.pdfbox.pdmodel.PDDocument();
+            org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage();
+            document.addPage(page);
+
+            org.apache.pdfbox.pdmodel.PDPageContentStream contentStream =
+                    new org.apache.pdfbox.pdmodel.PDPageContentStream(document, page);
+
+            // Title
+            contentStream.beginText();
+            contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA_BOLD, 18);
+            contentStream.newLineAtOffset(50, 750);
+            contentStream.showText(title);
+            contentStream.endText();
+
+            // Body content - split into lines
+            contentStream.beginText();
+            contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, 11);
+            contentStream.setLeading(16f);
+            contentStream.newLineAtOffset(50, 720);
+
+            for (String line : content.split("\n")) {
+                if (line.length() > 90) {
+                    // Word wrap long lines
+                    String[] words = line.split(" ");
+                    StringBuilder currentLine = new StringBuilder();
+                    for (String word : words) {
+                        if (currentLine.length() + word.length() > 90) {
+                            contentStream.showText(currentLine.toString().trim());
+                            contentStream.newLine();
+                            currentLine = new StringBuilder();
+                        }
+                        currentLine.append(word).append(" ");
+                    }
+                    if (currentLine.length() > 0) {
+                        contentStream.showText(currentLine.toString().trim());
+                        contentStream.newLine();
+                    }
+                } else {
+                    contentStream.showText(line);
+                    contentStream.newLine();
+                }
+            }
+            contentStream.endText();
+            contentStream.close();
+
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            document.save(baos);
+            document.close();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            System.err.println("Failed to generate sample PDF: " + e.getMessage());
+            return new byte[0];
+        }
     }
 
     private User createStudent(String name, String email) {

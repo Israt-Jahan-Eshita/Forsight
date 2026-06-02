@@ -41,10 +41,13 @@ public class Quiz {
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
     // Constructors
     public Quiz() {}
 
-    public Quiz(Long id, String title, String description, String className, String subject, String questionsJson, String questionText, String questionImageUrl, Resource resource, User teacher, LocalDateTime createdDate) {
+    public Quiz(Long id, String title, String description, String className, String subject, String questionsJson, String questionText, String questionImageUrl, Resource resource, User teacher, LocalDateTime createdDate, LocalDateTime dueDate) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -56,6 +59,7 @@ public class Quiz {
         this.resource = resource;
         this.teacher = teacher;
         this.createdDate = createdDate;
+        this.dueDate = dueDate;
     }
 
     // Getters and Setters
@@ -92,6 +96,9 @@ public class Quiz {
     public LocalDateTime getCreatedDate() { return createdDate; }
     public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
 
+    public LocalDateTime getDueDate() { return dueDate; }
+    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+
     // Builder
     public static QuizBuilder builder() {
         return new QuizBuilder();
@@ -109,6 +116,7 @@ public class Quiz {
         private Resource resource;
         private User teacher;
         private LocalDateTime createdDate;
+        private LocalDateTime dueDate;
 
         public QuizBuilder id(Long id) { this.id = id; return this; }
         public QuizBuilder title(String title) { this.title = title; return this; }
@@ -121,9 +129,10 @@ public class Quiz {
         public QuizBuilder resource(Resource resource) { this.resource = resource; return this; }
         public QuizBuilder teacher(User teacher) { this.teacher = teacher; return this; }
         public QuizBuilder createdDate(LocalDateTime createdDate) { this.createdDate = createdDate; return this; }
+        public QuizBuilder dueDate(LocalDateTime dueDate) { this.dueDate = dueDate; return this; }
 
         public Quiz build() {
-            return new Quiz(id, title, description, className, subject, questionsJson, questionText, questionImageUrl, resource, teacher, createdDate);
+            return new Quiz(id, title, description, className, subject, questionsJson, questionText, questionImageUrl, resource, teacher, createdDate, dueDate);
         }
     }
 }

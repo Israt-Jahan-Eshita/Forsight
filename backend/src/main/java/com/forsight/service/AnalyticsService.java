@@ -21,7 +21,7 @@ public class AnalyticsService {
         List<QuizSubmission> studentSubs = quizSubmissionRepository.findByStudentOrderBySubmissionDateAsc(student);
 
         double gradeDrop = 0.0;
-        double missedDeadlines = 0.0; // Currently placeholder, assume 0 for MVP
+        double missedDeadlines = 0.0;
         double timeVariance = 0.0;
         double resourceSkipping = 0.0;
         double zeroFeedback = 0.0;
@@ -41,6 +41,7 @@ public class AnalyticsService {
         int skippedResources = 0;
         int speedRuns = 0;
         int resilientFails = 0;
+        int lateSubmissions = 0;
 
         for (QuizSubmission sub : studentSubs) {
             if (Boolean.FALSE.equals(sub.getResourceOpened())) {
@@ -58,12 +59,19 @@ public class AnalyticsService {
                     resilientFails++;
                 }
             }
+            // Calculate missed deadlines from quiz dueDate
+            if (sub.getQuiz() != null && sub.getQuiz().getDueDate() != null && sub.getSubmissionDate() != null) {
+                if (sub.getSubmissionDate().isAfter(sub.getQuiz().getDueDate())) {
+                    lateSubmissions++;
+                }
+            }
         }
 
         if (studentSubs.size() > 0) {
             resourceSkipping = Math.min((skippedResources / (double) studentSubs.size()) * 100, 100);
             timeVariance = Math.min((speedRuns / (double) studentSubs.size()) * 100, 100);
             zeroFeedback = Math.min(resilientFails * 50, 100);
+            missedDeadlines = Math.min((lateSubmissions / (double) studentSubs.size()) * 100, 100);
         }
 
         // Risk = (0.30 * Grade Drop) + (0.25 * Missed Deadlines) + (0.20 * Time Variance) + (0.15 * Resource Skipping) + (0.10 * Zero Feedback)
@@ -78,6 +86,7 @@ public class AnalyticsService {
         if (resourceSkipping >= 50) behavioralFlags.add("Resource Skipper");
         if (gradeDrop >= 40) behavioralFlags.add("Sharp Grade Drop");
         if (zeroFeedback >= 50) behavioralFlags.add("Low Resilience");
+        if (missedDeadlines >= 50) behavioralFlags.add("Deadline Missed");
 
         Map<String, Object> riskData = new HashMap<>();
         riskData.put("id", student.getId());

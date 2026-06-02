@@ -59,8 +59,12 @@ export function TeacherDashboard() {
   // Widget Modal State
   const [activeWidget, setActiveWidget] = useState<'health' | 'ai' | 'trend' | null>(null);
 
+  // Loading State
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
+      setDashboardLoading(true);
       try {
         const [chronResponse, subResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/api/enrollments/teacher/chronicle`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -76,11 +80,15 @@ export function TeacherDashboard() {
         }
       } catch (e) {
         console.error(e);
+      } finally {
+        setDashboardLoading(false);
       }
     };
     if (token && token !== 'mock-jwt-token') {
       fetchDashboardData();
       fetchLogsAndHealth();
+    } else {
+      setDashboardLoading(false);
     }
   }, [token]);
 
@@ -143,6 +151,32 @@ export function TeacherDashboard() {
   const studentList = Object.values(groupedStudents);
 
   // No more mock engagementData needed
+
+  if (dashboardLoading) {
+    return (
+      <div className="pb-20 max-w-7xl mx-auto space-y-6 animate-pulse">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 pb-4 mb-6">
+          <div>
+            <div className="h-8 w-64 bg-color-surface rounded-lg neu-raised"></div>
+            <div className="h-4 w-48 bg-color-surface rounded mt-2 neu-raised"></div>
+          </div>
+          <div className="h-10 w-40 bg-color-surface rounded-xl neu-raised"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 bg-color-surface rounded-2xl neu-raised"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-64 bg-color-surface rounded-2xl neu-raised"></div>
+          <div className="h-64 bg-color-surface rounded-2xl neu-raised"></div>
+        </div>
+        <div className="text-center text-sm text-color-muted font-mono mt-8">
+          Connecting to Forsight servers... This may take up to 30 seconds on first load.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-6">
