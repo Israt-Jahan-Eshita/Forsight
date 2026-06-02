@@ -19,9 +19,9 @@ export function StudentDetail() {
   const { id } = useParams();
   const { token } = useAuth();
   
-  const studentData = location.state?.student || {
+  const [studentData, setStudentData] = useState<any>(location.state?.student || {
     id: Number(id), name: 'Loading...', email: '', status: 'Safe', riskScore: 0, courseName: '', behavioralFlags: []
-  };
+  });
 
   const [logs, setLogs] = useState<any[]>([]);
   const [insightGenerating, setInsightGenerating] = useState(false);
@@ -56,6 +56,12 @@ export function StudentDetail() {
         setScoreTrendData(data.scoreTrend || []);
         setEngagementRadarData(data.engagementRadar || []);
         setCohortCompareData(data.cohortCompare || []);
+        if (data.riskData) {
+          setStudentData((prev: any) => ({
+            ...prev,
+            ...data.riskData
+          }));
+        }
       }
     } catch (e) {
       console.error('Failed to fetch student analytics', e);
