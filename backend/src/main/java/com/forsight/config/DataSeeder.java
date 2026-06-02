@@ -186,13 +186,14 @@ public class DataSeeder implements CommandLineRunner {
         addSubmission(q3, s1, today.minusDays(1), 98, 100, 1, true, 4500, "GRADED");
 
         // Vikram (Critical - Falling grades, skipping resources, speed-running, LATE submissions)
-        addSubmission(q1, s2, today.minusDays(3), 85, 100, 1, true, 2000, "GRADED");  // Late (due was minusDays(4))
-        addSubmission(q2, s2, today, 45, 100, 1, false, 300, "GRADED");               // Late (due was minusDays(1)), skipped resource, speedrun
-        addSubmission(q3, s2, today.plusDays(3), 30, 100, 2, false, 250, "PENDING");    // Late (due was plusDays(1)), failed, multiple attempts, NEEDS REVIEW
+        // All submissions are late, skipped resources, speedruns (<60s), with multiple fails and massive grade drops.
+        addSubmission(q1, s2, today.minusDays(3), 85, 100, 1, false, 30, "GRADED");      // Late (due minusDays(4)), speedrun, skip resource
+        addSubmission(q2, s2, today, 80, 100, 2, false, 30, "GRADED");                   // Late (due minusDays(1)), speedrun, skip resource, fail
+        addSubmission(q3, s2, today.plusDays(3), 20, 100, 2, false, 30, "PENDING");      // Massive drop (80->20), Late, speedrun, skip resource, fail
 
         // Aarav (Watch - Average but struggling slightly)
         addSubmission(q1, s3, today.minusDays(5), 75, 100, 1, true, 3000, "GRADED");
-        addSubmission(q2, s3, today.minusDays(2), 70, 100, 2, true, 3500, "GRADED");
+        addSubmission(q2, s3, today, 50, 100, 1, true, 3500, "GRADED"); // Late (due minusDays(1)), Grade drop (75->50 = 25*2=50% drop)
         
         // Neha (Safe - Improving)
         addSubmission(q1, s4, today.minusDays(6), 65, 100, 1, true, 4000, "GRADED");

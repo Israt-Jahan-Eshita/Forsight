@@ -42,6 +42,9 @@ public class AiController {
     @Autowired
     private QuizSubmissionRepository quizSubmissionRepository;
 
+    @Autowired
+    private com.forsight.service.AnalyticsService analyticsService;
+
     public static class NotesRequest {
         private Long resourceId;
 
@@ -128,38 +131,32 @@ public class AiController {
             java.util.Map<String, java.util.List<Double>> courseGrades = new java.util.HashMap<>();
 
             for (User student : students) {
+                java.util.Map<String, Object> riskData = analyticsService.calculateStudentRisk(student);
+                int riskScore = (Integer) riskData.get("riskScore");
+                String status = (String) riskData.get("status");
+
+                if ("Safe".equals(status)) {
+                    safeCount++;
+                } else if ("Watch".equals(status)) {
+                    watchCount++;
+                    atRiskStudents.add(student.getName() + " (" + riskScore + "%)");
+                } else {
+                    criticalCount++;
+                    atRiskStudents.add(student.getName() + " (" + riskScore + "%)");
+                }
+
+                // Gather some basic course grades for context
                 List<QuizSubmission> studentSubs = submissions.stream()
                         .filter(s -> s.getStudent().getId().equals(student.getId()))
                         .collect(Collectors.toList());
-
-                double totalPct = 0.0;
-                int gradedCount = 0;
                 for (QuizSubmission sub : studentSubs) {
                     if ("GRADED".equals(sub.getStatus()) && sub.getScore() != null && sub.getMaxScore() != null && sub.getMaxScore() > 0) {
                         double pct = ((double) sub.getScore() / sub.getMaxScore()) * 100.0;
-                        totalPct += pct;
-                        gradedCount++;
-
                         if (sub.getQuiz().getResource() != null && sub.getQuiz().getResource().getCourse() != null) {
                             String courseName = sub.getQuiz().getResource().getCourse().getName();
                             courseGrades.computeIfAbsent(courseName, k -> new java.util.ArrayList<>()).add(pct);
                         }
                     }
-                }
-
-                if (gradedCount > 0) {
-                    double avg = totalPct / gradedCount;
-                    if (avg >= 85.0) {
-                        safeCount++;
-                    } else if (avg >= 70.0) {
-                        watchCount++;
-                        atRiskStudents.add(student.getName() + " (" + Math.round(avg) + "%)");
-                    } else {
-                        criticalCount++;
-                        atRiskStudents.add(student.getName() + " (" + Math.round(avg) + "%)");
-                    }
-                } else {
-                    safeCount++; // Default to safe if no graded work yet
                 }
             }
 
