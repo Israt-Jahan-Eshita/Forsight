@@ -210,14 +210,14 @@ public class DataSeeder implements CommandLineRunner {
 
             // Title
             contentStream.beginText();
-            contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA_BOLD, 18);
+            contentStream.setFont(new org.apache.pdfbox.pdmodel.font.PDType1Font(org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA_BOLD), 18);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText(title);
             contentStream.endText();
 
             // Body content - split into lines
             contentStream.beginText();
-            contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, 11);
+            contentStream.setFont(new org.apache.pdfbox.pdmodel.font.PDType1Font(org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA), 11);
             contentStream.setLeading(16f);
             contentStream.newLineAtOffset(50, 720);
 
