@@ -126,8 +126,19 @@ public class DataSeeder implements CommandLineRunner {
 
         // Enrollments
         for (User s : List.of(s1, s2, s3, s4, s5)) {
-            enrollmentRepository.save(new Enrollment(s, teacher, c1, "Enrolled", LocalDateTime.now().minusDays(30)));
-            enrollmentRepository.save(new Enrollment(s, teacher, c2, "Enrolled", LocalDateTime.now().minusDays(30)));
+            String c1Status = "Enrolled";
+            String c2Status = "Enrolled";
+            
+            // Make the dossiers look dynamic
+            if (s.getEmail().equals("vikram@forsight.com")) {
+                c1Status = "Needs Review"; // Triggers the yellow warning badge
+            }
+            if (s.getEmail().equals("neha@forsight.com")) {
+                c2Status = "Pending"; // Triggers pending state
+            }
+            
+            enrollmentRepository.save(new Enrollment(s, teacher, c1, c1Status, LocalDateTime.now().minusDays(30)));
+            enrollmentRepository.save(new Enrollment(s, teacher, c2, c2Status, LocalDateTime.now().minusDays(30)));
         }
 
         // Resources with embedded PDF data
