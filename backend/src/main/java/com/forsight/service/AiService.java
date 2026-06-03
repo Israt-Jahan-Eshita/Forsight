@@ -88,10 +88,12 @@ public class AiService {
                 "2. True or False -- a statement the student marks as true or false\n" +
                 "3. Short Answer -- a question requiring a 1-2 sentence response\n" +
                 "4. Fill in the Blank -- a sentence with a key term missing, shown as _____\n" +
-                "5. Essay / Long Answer -- a question requiring a detailed paragraph-level response\n\n" +
-                "Generate at least 2 questions of each type (minimum 10 questions total). " +
-                "Label each question clearly with its type (e.g., [MCQ], [True/False], [Short Answer], [Fill in the Blank], [Essay]). " +
-                "Include an answer key at the end. Format everything in clean Markdown.";
+                "5. Essay / Long Answer -- a question requiring a detailed paragraph-level response\n" +
+                "6. Creative Questions (CQ) -- scenario-based structured questions assessing higher-order thinking\n" +
+                "7. Mathematical / Analytical Problems -- if applicable, problem-solving questions requiring calculations\n\n" +
+                "Generate a mix of these question types (minimum 10 questions total). " +
+                "Label each question clearly with its type (e.g., [MCQ], [True/False], [CQ], [Math]). " +
+                "Include a detailed answer key at the end. Format everything beautifully in Markdown.";
         return callGrok(systemPrompt, prompt, null);
     }
 
