@@ -640,7 +640,7 @@ export function TeacherResources() {
                                           className="w-full text-xs neu-inset bg-color-surface p-2.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent min-h-[60px]"
                                         />
                                         <Button size="sm" onClick={() => handleGenerateAIQuiz(res.id)} disabled={generating} className="w-full text-xs font-bold h-8">
-                                          {generating ? 'Generating...' : 'Generate Questions'}
+                                          {generating ? 'Generating...' : 'Generate Questions (v2)'}
                                         </Button>
                                       </div>
 
