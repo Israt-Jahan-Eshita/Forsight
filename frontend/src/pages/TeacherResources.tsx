@@ -315,6 +315,7 @@ export function TeacherResources() {
     setExpandedResourceId(expandedResourceId === resourceId ? null : resourceId);
     setQuizStatusMsg('');
     setAiPrompt('');
+    setQuestionText('');
   };
 
   const toggleStudentsPanel = async (courseId: number) => {
