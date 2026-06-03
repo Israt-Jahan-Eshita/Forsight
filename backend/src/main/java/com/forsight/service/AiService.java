@@ -92,6 +92,10 @@ public class AiService {
         return callGrok(systemPrompt, prompt, resource);
     }
 
+    public String generateText(String systemPrompt, String userPrompt) {
+        return callGrok(systemPrompt, userPrompt, null);
+    }
+
     private String callGrok(String systemPrompt, String userPrompt, Resource resource) {
         try {
             String context = extractResourceContext(resource);

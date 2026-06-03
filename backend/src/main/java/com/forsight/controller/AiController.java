@@ -208,8 +208,8 @@ public class AiController {
                     "Paragraph 1: State the divergence or general trajectory based on these stats: " + statsContext + " " +
                     "Paragraph 2: Pinpoint the cause and recommend an action.";
 
-            // Using the existing aiService logic to generate text
-            String response = aiService.generateQuiz(prompt, null);
+            String systemPrompt = "You are Forsight AI, an expert educational leader.";
+            String response = aiService.generateText(systemPrompt, prompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -219,9 +219,9 @@ public class AiController {
     @PostMapping("/student-insight")
     public ResponseEntity<?> generateStudentInsight(@RequestBody PromptRequest request) {
         try {
-            String prompt = "You are an educational AI. Analyze the following student data and provide insights in exactly two sections separated by '|||'. " +
-                    "Section 1: Why Struggling. Section 2: What To Do. Data: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt, null);
+            String systemPrompt = "You are an expert educational AI.";
+            String userPrompt = "Analyze the following student data and provide insights in exactly two sections separated by '|||'. Section 1: Why Struggling. Section 2: What To Do. Data: " + request.getPrompt();
+            String response = aiService.generateText(systemPrompt, userPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -231,8 +231,9 @@ public class AiController {
     @PostMapping("/intervention-insight")
     public ResponseEntity<?> generateInterventionInsight(@RequestBody PromptRequest request) {
         try {
-            String prompt = "You are an expert teacher's assistant AI. Based on the following student performance data and behavioral flags, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt, null);
+            String systemPrompt = "You are an expert teacher's assistant AI.";
+            String userPrompt = "Based on the following student performance data and behavioral flags, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
+            String response = aiService.generateText(systemPrompt, userPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -242,8 +243,9 @@ public class AiController {
     @PostMapping("/translate")
     public ResponseEntity<?> translateToBangla(@RequestBody PromptRequest request) {
         try {
-            String prompt = "Translate the following educational progress report into highly formal and polite Bengali (Bangla) suitable for sending to a parent: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt, null);
+            String systemPrompt = "You are an expert educational translator.";
+            String userPrompt = "Translate the following educational progress report into highly formal and polite Bengali (Bangla) suitable for sending to a parent: " + request.getPrompt();
+            String response = aiService.generateText(systemPrompt, userPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -253,17 +255,15 @@ public class AiController {
     @PostMapping("/general-chat")
     public ResponseEntity<?> generalChat(@RequestBody ChatRequest request) {
         try {
-            String prompt = "You are Forsight Assistant, an AI guide for the 'Forsight' educational platform. " +
+            String systemPrompt = "You are Forsight Assistant, an AI guide for the 'Forsight' educational platform. " +
                             "CRITICAL INSTRUCTIONS: " +
                             "1. Keep answers extremely short (1-2 sentences max). " +
                             "2. ONLY answer questions related to education, learning, or navigating this platform. " +
-                            "3. Do not generate code or long explanations. " +
-                            "User message: " + request.getMessage() + "\n" +
+                            "3. Do not generate code or long explanations.";
+            String userPrompt = "User message: " + request.getMessage() + "\n" +
                             "History: " + (request.getHistoryJson() != null ? request.getHistoryJson() : "None");
             
-            // Reusing generateQuiz just to pass the text directly to the Groq call inside AiService
-            // The AiService's generateQuiz method ignores resource context when null is passed.
-            String response = aiService.generateQuiz(prompt, null);
+            String response = aiService.generateText(systemPrompt, userPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
