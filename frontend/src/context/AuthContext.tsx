@@ -24,11 +24,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<Role>(() => {
+    const savedUserJson = localStorage.getItem('fs_user');
+    if (savedUserJson) {
+      try { return JSON.parse(savedUserJson).role.toLowerCase() as Role; } catch(e) {}
+    }
+    return null;
+  });
+  
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUserJson = localStorage.getItem('fs_user');
+    if (savedUserJson) {
+      try { return JSON.parse(savedUserJson) as User; } catch(e) {}
+    }
+    return null;
+  });
+  
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('fs_token'));
 
-  // Initialize Auth state from LocalStorage on startup
+  // Initialize Auth state from LocalStorage on startup (redundant but kept for structure)
   useEffect(() => {
     const savedToken = localStorage.getItem('fs_token');
     const savedUserJson = localStorage.getItem('fs_user');

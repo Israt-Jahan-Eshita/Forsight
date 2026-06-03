@@ -56,7 +56,8 @@ export function TeacherStudentsList() {
   const generateInsight = async (student: StudentAnalytics) => {
     setGeneratingInsight(student.id);
     try {
-      const promptData = `Student: ${student.name}. Risk Score: ${student.riskScore}. Course: ${student.courseName}. Behavioral Flags: ${student.behavioralFlags.join(', ')}.`;
+      const flagsStr = student.behavioralFlags && student.behavioralFlags.length > 0 ? student.behavioralFlags.join(', ') : 'None';
+      const promptData = `Student: ${student.name}. Risk Score: ${student.riskScore}/100. Course: ${student.courseName}. Behavioral Flags: ${flagsStr}.`;
       const response = await fetch(`${API_BASE_URL}/api/ai/intervention-insight`, {
         method: 'POST',
         headers: {
