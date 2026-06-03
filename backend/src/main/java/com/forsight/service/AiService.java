@@ -81,7 +81,7 @@ public class AiService {
         return callGrok(systemPrompt, userPrompt, resource);
     }
 
-    public String generateQuiz(String prompt) {
+    public String generateQuiz(String prompt, Resource resource) {
         String systemPrompt = "You are Forsight AI, an expert educational assessment creator. Generate a practice quiz EXACTLY following the teacher's instructions in the prompt.\n" +
                 "CRITICAL RULES:\n" +
                 "1. If the teacher asks for specific question types (e.g., 5 MCQs, 2 Creative Questions (CQ), 3 Math problems), you MUST generate exactly what they requested.\n" +
@@ -89,14 +89,14 @@ public class AiService {
                 "3. Ensure the difficulty matches the context implied by the teacher.\n" +
                 "4. ALWAYS include a detailed answer key at the very end.\n" +
                 "5. Format everything beautifully using standard Markdown, using clear headers and bullet points.";
-        return callGrok(systemPrompt, prompt, null);
+        return callGrok(systemPrompt, prompt, resource);
     }
 
     private String callGrok(String systemPrompt, String userPrompt, Resource resource) {
         try {
-            String pdfContent = extractPdfText(resource);
-            if (!pdfContent.isEmpty()) {
-                userPrompt += "\n\nHere is the extracted text from the study guide document for context:\n" + pdfContent;
+            String context = extractResourceContext(resource);
+            if (!context.isEmpty()) {
+                userPrompt += "\n\nHere is the extracted context from the study resource:\n" + context;
             }
 
             ObjectNode rootNode = objectMapper.createObjectNode();
@@ -143,13 +143,14 @@ public class AiService {
         }
     }
 
-    private String extractPdfText(Resource resource) {
-        if (resource == null || resource.getFileData() == null || resource.getFileData().length == 0) {
+    private String extractResourceContext(Resource resource) {
+        if (resource == null) {
             return "";
         }
         
         String fileType = resource.getFileType();
         if (fileType != null && fileType.contains("pdf")) {
+            if (resource.getFileData() == null || resource.getFileData().length == 0) return "";
             try (PDDocument document = Loader.loadPDF(resource.getFileData())) {
                 PDFTextStripper stripper = new PDFTextStripper();
                 String text = stripper.getText(document);
@@ -160,7 +161,10 @@ public class AiService {
                 return text;
             } catch (Exception e) {
                 System.err.println("Failed to extract PDF text: " + e.getMessage());
+                return "";
             }
+        } else if (fileType != null && (fileType.contains("video") || fileType.contains("audio"))) {
+            return resource.getDescription() != null ? resource.getDescription() : "";
         }
         return "";
     }
