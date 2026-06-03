@@ -19,7 +19,7 @@ export function JudgeBanner({ title, description }: JudgeBannerProps) {
       </div>
       <div className="flex-1 pt-0.5">
         <h4 className="text-sm font-black text-indigo-900 font-serif mb-1 flex items-center gap-2">
-          JUDGE CONTEXT: {title}
+          CONTEXT: {title}
         </h4>
         <p className="text-xs text-indigo-900/80 leading-relaxed font-medium">
           {description}

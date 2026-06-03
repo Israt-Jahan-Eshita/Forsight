@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles, ArrowUpRight, Activity, Users, ShieldAlert, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -181,6 +182,11 @@ export function TeacherDashboard() {
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-6">
       
+      <JudgeBanner 
+        title="Teacher Command Center"
+        description="This dashboard provides a unified view of all enrolled students. Teachers can monitor classroom health, view engagement trends, and identify at-risk students before they fail. The UI heavily utilizes neumorphic design principles for a modern, tactile feel."
+      />
+
       {/* 1. Compact and Sleek Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 pb-4 mb-6">
         <div>

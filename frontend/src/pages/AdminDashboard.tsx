@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, Activity, AlertOctagon, Server, 
@@ -94,6 +95,11 @@ export function AdminDashboard() {
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-8 animate-fade-in">
       
+      <JudgeBanner 
+        title="Admin Control Panel"
+        description="This dashboard provides a high-level overview of the entire Forsight system. Administrators can monitor system usage, provision new teacher accounts, and review audit logs to ensure compliance and track platform health."
+      />
+
       {/* 1. Sleek Compact Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 pb-4">
         <div>
