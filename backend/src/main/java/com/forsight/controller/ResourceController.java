@@ -113,7 +113,24 @@ public class ResourceController {
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
         if (resource.getFileData() == null) {
-            String placeholderHtml = "<html><body style='display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;color:#666;background:#f9f9f9;text-align:center;'><div><h3>" + resource.getFileName() + "</h3><p>Media playback is simulated for this hackathon demo.<br/>(Use the 'AI Assistant & Notes' button to interact with the transcript!)</p></div></body></html>";
+            String fileType = resource.getFileType() != null ? resource.getFileType().toLowerCase() : "";
+            String placeholderHtml;
+
+            if (fileType.contains("video")) {
+                placeholderHtml = "<html><body style='margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100%;'>" +
+                        "<video width='100%' height='100%' controls autoplay>" +
+                        "<source src='https://www.w3schools.com/html/mov_bbb.mp4' type='video/mp4'>" +
+                        "</video></body></html>";
+            } else if (fileType.contains("audio")) {
+                placeholderHtml = "<html><body style='margin:0;background:#f9f9f9;display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;'>" +
+                        "<div style='text-align:center;'><h3>" + resource.getFileName() + "</h3><br/>" +
+                        "<audio controls autoplay>" +
+                        "<source src='https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' type='audio/mpeg'>" +
+                        "</audio></div></body></html>";
+            } else {
+                placeholderHtml = "<html><body style='display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;color:#666;background:#f9f9f9;text-align:center;'><div><h3>" + resource.getFileName() + "</h3><p>Media playback is simulated for this hackathon demo.</p></div></body></html>";
+            }
+
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(placeholderHtml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
