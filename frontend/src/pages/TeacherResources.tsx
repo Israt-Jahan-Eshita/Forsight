@@ -452,12 +452,12 @@ export function TeacherResources() {
   };
 
   return (
-    <div className="animate-fade-in pb-20 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+    <div className="animate-fade-in pb-20 max-w-7xl mx-auto space-y-6">
       <JudgeBanner 
         title="Courses & Resources"
         description="Manage course materials and AI-generated quizzes. You can upload PDFs or Video/Audio lectures and generate contextual quizzes based on them."
       />
-
+      <div className="flex flex-col lg:flex-row gap-8">
       {/* Left panel: Courses and Resources */}
       <div className="flex-1 space-y-6">
         <div>
@@ -806,6 +806,7 @@ export function TeacherResources() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -172,10 +172,6 @@ export function TeacherSubmissions() {
 
     return (
       <div className="space-y-6 animate-fade-in">
-      <JudgeBanner 
-        title="Assignment Inbox"
-        description="Review all quizzes submitted by your students. The system automatically highlights late submissions or low scores that might need attention."
-      />
 
         
         {/* Dynamic Resubmission Badge */}
@@ -276,10 +272,14 @@ export function TeacherSubmissions() {
   };
 
   return (
-    <div className="animate-fade-in max-w-7xl mx-auto h-[calc(100vh-8rem)] flex gap-6">
-      
+    <div className="animate-fade-in max-w-7xl mx-auto h-[calc(100vh-8rem)] flex flex-col gap-6">
+      <JudgeBanner 
+        title="Assignment Inbox"
+        description="Review all quizzes submitted by your students. The system automatically highlights late submissions or low scores that might need attention."
+      />
+      <div className="flex-1 flex gap-6 overflow-hidden">
       {/* Left Sidebar: Submission Queue */}
-      <div className="w-96 flex flex-col gap-4 bg-color-surface neu-raised border border-white/50 rounded-2xl p-4 overflow-hidden">
+      <div className="w-96 flex flex-col gap-4 bg-color-surface neu-raised border border-white/50 rounded-2xl p-4 overflow-hidden shrink-0">
         <div className="pb-3 border-b border-black/5 shrink-0">
           <h2 className="text-sm font-bold text-color-text flex items-center gap-2 uppercase tracking-wide">
             <FileText className="w-4 h-4" /> Submissions Queue
@@ -428,6 +428,7 @@ export function TeacherSubmissions() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
