@@ -113,7 +113,10 @@ public class ResourceController {
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
         if (resource.getFileData() == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            String placeholderHtml = "<html><body style='display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;color:#666;background:#f9f9f9;text-align:center;'><div><h3>" + resource.getFileName() + "</h3><p>Media playback is simulated for this hackathon demo.<br/>(Use the 'AI Assistant & Notes' button to interact with the transcript!)</p></div></body></html>";
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(placeholderHtml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
 
         return ResponseEntity.ok()
