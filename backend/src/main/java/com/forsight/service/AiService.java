@@ -27,17 +27,41 @@ public class AiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String generateNotes(Resource resource) {
-        String prompt = "Generate comprehensive, highly structured, and visually beautiful study notes for this topic:\n" +
-                "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
-                "Class Group: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
-                "Resource Title: " + resource.getTitle() + "\n" +
-                "Description: " + (resource.getDescription() != null ? resource.getDescription() : "Study guide") + "\n\n" +
-                "Please format the output beautifully using standard Markdown. Include key concepts, detailed bullet definitions, summaries, and relevant equations/formulas. Keep it clear, elegant, and highly educational.";
+        String mediaType = detectMediaType(resource);
+        String prompt;
+
+        if ("video".equals(mediaType)) {
+            prompt = "Generate comprehensive, highly structured study notes based on this educational video lecture:\n" +
+                    "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
+                    "Class Group: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
+                    "Video Title: " + resource.getTitle() + "\n" +
+                    "Lecture Summary: " + (resource.getDescription() != null ? resource.getDescription() : "Educational video") + "\n\n" +
+                    "Based on the lecture summary above, generate detailed study notes covering all key concepts, definitions, formulas, and examples that would be covered in this video lecture. " +
+                    "Format the output beautifully using Markdown with headers, bullet points, and highlighted key terms.";
+        } else if ("audio".equals(mediaType)) {
+            prompt = "Generate comprehensive, highly structured study notes based on this educational audio recording:\n" +
+                    "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
+                    "Class Group: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
+                    "Audio Title: " + resource.getTitle() + "\n" +
+                    "Recording Summary: " + (resource.getDescription() != null ? resource.getDescription() : "Educational audio") + "\n\n" +
+                    "Based on the recording summary above, generate detailed study notes covering all key concepts, definitions, and examples discussed in this audio lecture. " +
+                    "Format the output beautifully using Markdown with headers, bullet points, and highlighted key terms.";
+        } else {
+            prompt = "Generate comprehensive, highly structured, and visually beautiful study notes for this topic:\n" +
+                    "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
+                    "Class Group: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
+                    "Resource Title: " + resource.getTitle() + "\n" +
+                    "Description: " + (resource.getDescription() != null ? resource.getDescription() : "Study guide") + "\n\n" +
+                    "Please format the output beautifully using standard Markdown. Include key concepts, detailed bullet definitions, summaries, and relevant equations/formulas. Keep it clear, elegant, and highly educational.";
+        }
 
         return callGrok("You are Forsight AI, a brilliant and supportive educational assistant.", prompt, resource);
     }
 
     public String chatAboutResource(Resource resource, String message, String historyJson) {
+        String mediaType = detectMediaType(resource);
+        String mediaLabel = "video".equals(mediaType) ? "video lecture" : ("audio".equals(mediaType) ? "audio recording" : "study guide");
+
         String systemPrompt = "You are Forsight AI, an educational tutor strictly bound to the study material provided below. " +
                 "CRITICAL RULES: " +
                 "1. You must ONLY answer questions that are directly related to the provided study material content. " +
@@ -46,7 +70,7 @@ public class AiService {
                 "3. Do NOT answer general knowledge questions, coding questions, or anything outside the scope of the attached document. " +
                 "4. Keep your tone warm, clear, and encouraging. Use Markdown formatting for clarity.";
         
-        String userPrompt = "We are discussing a study guide:\n" +
+        String userPrompt = "We are discussing a " + mediaLabel + ":\n" +
                 "Title: " + resource.getTitle() + "\n" +
                 "Subject: " + (resource.getCourse() != null ? resource.getCourse().getName() : "Unknown") + "\n" +
                 "Class: " + (resource.getCourse() != null ? resource.getCourse().getClassName() : "Unknown") + "\n" +
@@ -58,8 +82,16 @@ public class AiService {
     }
 
     public String generateQuiz(String prompt) {
-        String systemPrompt = "You are Forsight AI, an expert educational assessment creator. Generate practice questions based on the user's prompt. Provide the output in clean text or Markdown so the teacher can review it. Do not include extra conversational filler.";
-        // Passing null for Resource since we are just using the prompt directly
+        String systemPrompt = "You are Forsight AI, an expert educational assessment creator. Generate a diverse set of practice questions based on the user's prompt. " +
+                "IMPORTANT: You MUST include a MIX of the following question types in every quiz you generate:\n" +
+                "1. Multiple Choice Questions (MCQ) -- with 4 options (A, B, C, D) and the correct answer marked\n" +
+                "2. True or False -- a statement the student marks as true or false\n" +
+                "3. Short Answer -- a question requiring a 1-2 sentence response\n" +
+                "4. Fill in the Blank -- a sentence with a key term missing, shown as _____\n" +
+                "5. Essay / Long Answer -- a question requiring a detailed paragraph-level response\n\n" +
+                "Generate at least 2 questions of each type (minimum 10 questions total). " +
+                "Label each question clearly with its type (e.g., [MCQ], [True/False], [Short Answer], [Fill in the Blank], [Essay]). " +
+                "Include an answer key at the end. Format everything in clean Markdown.";
         return callGrok(systemPrompt, prompt, null);
     }
 
@@ -136,4 +168,16 @@ public class AiService {
         return "";
     }
 
+    /**
+     * Detects the media type of a resource based on its fileType field.
+     * Returns "pdf", "video", "audio", or "other".
+     */
+    private String detectMediaType(Resource resource) {
+        if (resource == null || resource.getFileType() == null) return "other";
+        String ft = resource.getFileType().toLowerCase();
+        if (ft.contains("pdf")) return "pdf";
+        if (ft.contains("video") || ft.contains("mp4") || ft.contains("webm")) return "video";
+        if (ft.contains("audio") || ft.contains("mp3") || ft.contains("wav") || ft.contains("mpeg")) return "audio";
+        return "other";
+    }
 }

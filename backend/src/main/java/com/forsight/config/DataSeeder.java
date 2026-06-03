@@ -156,7 +156,41 @@ public class DataSeeder implements CommandLineRunner {
                 .build();
         r2.setFileData(calculusPdf);
 
-        resourceRepository.saveAll(List.of(r1, r2));
+        // Video resource with rich description for AI context
+        Resource r3 = Resource.builder()
+                .title("Newton's Laws of Motion -- Video Lecture")
+                .description("A 45-minute comprehensive video lecture covering all three of Newton's Laws of Motion. " +
+                        "Topics covered: (1) Newton's First Law (Law of Inertia) -- an object at rest stays at rest and an object in motion stays in motion unless acted upon by an unbalanced force. " +
+                        "Real-world examples include seatbelts, tablecloth trick, and satellites in orbit. " +
+                        "(2) Newton's Second Law (F = ma) -- force equals mass times acceleration. " +
+                        "Worked examples include calculating the force needed to accelerate a 1000 kg car at 2 m/s^2 (Answer: 2000 N), " +
+                        "and finding the acceleration of a 5 kg object with 20 N applied (Answer: 4 m/s^2). " +
+                        "(3) Newton's Third Law (Action-Reaction) -- for every action there is an equal and opposite reaction. " +
+                        "Examples include rocket propulsion, swimming, and walking. " +
+                        "The lecture also covers free body diagrams, friction forces (static and kinetic), " +
+                        "and the relationship between weight (W = mg) and mass. " +
+                        "Key formula: F_net = m * a, W = m * g (where g = 9.8 m/s^2).")
+                .fileName("newtons_laws_lecture.mp4").fileType("video/mp4")
+                .teacher(teacher).course(c1).uploadDate(LocalDateTime.now().minusDays(2))
+                .build();
+
+        // Audio resource with rich description for AI context
+        Resource r4 = Resource.builder()
+                .title("Integration Techniques -- Audio Podcast")
+                .description("A 30-minute educational audio podcast covering fundamental integration techniques for Class 10 mathematics. " +
+                        "Topics covered: (1) Indefinite Integrals -- the antiderivative concept, integral of x^n = x^(n+1)/(n+1) + C. " +
+                        "Examples: integral of 3x^2 dx = x^3 + C, integral of 1/x dx = ln|x| + C. " +
+                        "(2) Definite Integrals -- evaluating integrals between limits using the Fundamental Theorem of Calculus. " +
+                        "Example: integral from 0 to 2 of x^2 dx = [x^3/3] from 0 to 2 = 8/3 - 0 = 8/3. " +
+                        "(3) Integration by Substitution (u-substitution) -- method for integrating composite functions. " +
+                        "Example: integral of 2x * cos(x^2) dx, let u = x^2, du = 2x dx, result = sin(x^2) + C. " +
+                        "(4) Applications of Integration -- finding area under a curve, calculating displacement from velocity. " +
+                        "Key relationships: velocity is the derivative of position, position is the integral of velocity.")
+                .fileName("integration_podcast.mp3").fileType("audio/mpeg")
+                .teacher(teacher).course(c2).uploadDate(LocalDateTime.now().minusDays(1))
+                .build();
+
+        resourceRepository.saveAll(List.of(r1, r2, r3, r4));
 
         // Quizzes with due dates
         LocalDateTime today = LocalDateTime.now();
