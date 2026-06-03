@@ -69,9 +69,13 @@ public class AiController {
 
     public static class PromptRequest {
         private String prompt;
+        private Long resourceId;
 
         public String getPrompt() { return prompt; }
         public void setPrompt(String prompt) { this.prompt = prompt; }
+        
+        public Long getResourceId() { return resourceId; }
+        public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
     }
 
     @PostMapping("/notes")
@@ -103,7 +107,12 @@ public class AiController {
     @PostMapping("/generate-quiz")
     public ResponseEntity<?> generateQuiz(@RequestBody PromptRequest request) {
         try {
-            String response = aiService.generateQuiz(request.getPrompt());
+            Resource resource = null;
+            if (request.getResourceId() != null) {
+                resource = resourceRepository.findById(request.getResourceId()).orElse(null);
+            }
+            
+            String response = aiService.generateQuiz(request.getPrompt(), resource);
             systemLogService.logEvent("System generated a new practice quiz/deck via AI.", "INFO");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -196,7 +205,7 @@ public class AiController {
                     "Paragraph 2: Pinpoint the cause and recommend an action.";
 
             // Using the existing aiService logic to generate text
-            String response = aiService.generateQuiz(prompt);
+            String response = aiService.generateQuiz(prompt, null);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -208,7 +217,7 @@ public class AiController {
         try {
             String prompt = "You are an educational AI. Analyze the following student data and provide insights in exactly two sections separated by '|||'. " +
                     "Section 1: Why Struggling. Section 2: What To Do. Data: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt);
+            String response = aiService.generateQuiz(prompt, null);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -219,7 +228,7 @@ public class AiController {
     public ResponseEntity<?> generateInterventionInsight(@RequestBody PromptRequest request) {
         try {
             String prompt = "You are an expert teacher's assistant AI. Based on the following student performance data and behavioral flags, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt);
+            String response = aiService.generateQuiz(prompt, null);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -230,7 +239,7 @@ public class AiController {
     public ResponseEntity<?> translateToBangla(@RequestBody PromptRequest request) {
         try {
             String prompt = "Translate the following educational progress report into highly formal and polite Bengali (Bangla) suitable for sending to a parent: " + request.getPrompt();
-            String response = aiService.generateQuiz(prompt);
+            String response = aiService.generateQuiz(prompt, null);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -249,8 +258,8 @@ public class AiController {
                             "History: " + (request.getHistoryJson() != null ? request.getHistoryJson() : "None");
             
             // Reusing generateQuiz just to pass the text directly to the Groq call inside AiService
-            // The AiService's generateQuiz method ignores resource context.
-            String response = aiService.generateQuiz(prompt);
+            // The AiService's generateQuiz method ignores resource context when null is passed.
+            String response = aiService.generateQuiz(prompt, null);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
