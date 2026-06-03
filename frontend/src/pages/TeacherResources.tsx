@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface Course {
   id: number;
@@ -452,6 +453,11 @@ export function TeacherResources() {
 
   return (
     <div className="animate-fade-in pb-20 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+      <JudgeBanner 
+        title="Courses & Resources"
+        description="Manage course materials and AI-generated quizzes. You can upload PDFs or Video/Audio lectures and generate contextual quizzes based on them."
+      />
+
       {/* Left panel: Courses and Resources */}
       <div className="flex-1 space-y-6">
         <div>

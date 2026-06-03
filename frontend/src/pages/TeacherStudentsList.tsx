@@ -4,6 +4,7 @@ import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Sparkles, Filter } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface StudentAnalytics {
   id: number;
@@ -84,6 +85,11 @@ export function TeacherStudentsList() {
 
   return (
     <div className="pb-20 max-w-6xl mx-auto space-y-8 animate-fade-in relative min-h-screen">
+      <JudgeBanner 
+        title="Student Roster"
+        description="View and manage all enrolled students. You can see their current engagement status, risk levels, and quickly reach out if they need help."
+      />
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-black/10 pb-6 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold text-color-text font-serif tracking-tight">

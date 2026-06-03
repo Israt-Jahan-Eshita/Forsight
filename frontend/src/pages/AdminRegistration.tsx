@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { MoreVertical, Key, Copy, Check, CheckCircle2, Sparkles, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface MockUser {
   id: number;
@@ -116,6 +117,11 @@ export function AdminRegistration() {
 
   return (
     <div className="relative min-h-[calc(100vh-140px)] w-full overflow-hidden rounded-2xl p-6 md:p-10 bg-gradient-to-tr from-[#F1EFF7] via-[#FAF9FC] to-[#EFF1FA] border border-white/40 shadow-sm animate-fade-in">
+      <JudgeBanner 
+        title="User Provisioning"
+        description="Register new teachers and administrators. This bypasses the standard student registration flow to grant elevated permissions."
+      />
+
       
       {/* Drifting premium glowing blur circles */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-color-accent/15 blur-[120px] animate-float pointer-events-none" />

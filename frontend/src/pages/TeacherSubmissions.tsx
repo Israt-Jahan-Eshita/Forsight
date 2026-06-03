@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { Check, MessageCircle, FileText, CheckCircle, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface User {
   id: number;
@@ -171,6 +172,11 @@ export function TeacherSubmissions() {
 
     return (
       <div className="space-y-6 animate-fade-in">
+      <JudgeBanner 
+        title="Assignment Inbox"
+        description="Review all quizzes submitted by your students. The system automatically highlights late submissions or low scores that might need attention."
+      />
+
         
         {/* Dynamic Resubmission Badge */}
         {sub.attemptNumber > 1 && (

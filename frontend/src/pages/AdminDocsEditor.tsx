@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, Save, Plus, Trash } from 'lucide-react';
+import { JudgeBanner } from '../components/ui/JudgeBanner';
 
 interface DocsConfig {
   id: number;
@@ -102,6 +103,11 @@ export function AdminDocsEditor() {
 
   return (
     <div className="pb-20 max-w-4xl mx-auto space-y-6 animate-fade-in">
+      <JudgeBanner 
+        title="Content Management System (CMS)"
+        description="Edit global platform content and guidelines. Changes made here will be reflected across the platform for all users."
+      />
+
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-black/10 pb-4">
