@@ -84,19 +84,23 @@ public class AiService {
     public String generateQuiz(String prompt, Resource resource) {
         String systemPrompt = "You are Forsight AI, an expert educational assessment creator. Generate a practice quiz EXACTLY following the teacher's instructions in the prompt.\n" +
                 "CRITICAL RULES:\n" +
-                "1. If the teacher asks for specific question types (e.g., 5 MCQs, 2 Creative Questions (CQ), 3 Math problems), you MUST generate exactly what they requested.\n" +
-                "2. Do not force a mix of question types unless the teacher explicitly asks for a mixed assessment or leaves the format open-ended.\n" +
-                "3. Ensure the difficulty matches the context implied by the teacher.\n" +
+                "1. You MUST ONLY generate questions based on the 'extracted context from the study resource' provided below. If the context has nothing to do with biology, DO NOT generate biology questions.\n" +
+                "2. If no context is provided to you, you MUST politely state: 'I could not find the resource context. Please ensure the resource is attached.' and generate NO questions.\n" +
+                "3. If the teacher asks for specific question types (e.g., 5 MCQs, 2 CQ), generate exactly what they requested.\n" +
                 "4. ALWAYS include a detailed answer key at the very end.\n" +
-                "5. Format everything beautifully using standard Markdown, using clear headers and bullet points.";
+                "5. Format beautifully using standard Markdown.";
         return callGrok(systemPrompt, prompt, resource);
     }
 
     private String callGrok(String systemPrompt, String userPrompt, Resource resource) {
         try {
             String context = extractResourceContext(resource);
+            System.out.println("DEBUG AiService callGrok: Extracted context length = " + context.length());
+            
             if (!context.isEmpty()) {
                 userPrompt += "\n\nHere is the extracted context from the study resource:\n" + context;
+            } else {
+                System.out.println("DEBUG AiService callGrok: WARNING - Context is empty!");
             }
 
             ObjectNode rootNode = objectMapper.createObjectNode();

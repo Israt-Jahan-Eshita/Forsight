@@ -107,9 +107,13 @@ public class AiController {
     @PostMapping("/generate-quiz")
     public ResponseEntity<?> generateQuiz(@RequestBody PromptRequest request) {
         try {
+            System.out.println("DEBUG AiController /generate-quiz: Received PromptRequest with resourceId=" + request.getResourceId());
             Resource resource = null;
             if (request.getResourceId() != null) {
                 resource = resourceRepository.findById(request.getResourceId()).orElse(null);
+                System.out.println("DEBUG AiController /generate-quiz: Found resource? " + (resource != null ? "Yes (" + resource.getTitle() + ")" : "No"));
+            } else {
+                System.out.println("DEBUG AiController /generate-quiz: WARNING - resourceId is NULL. The frontend did not send a resourceId! AI will hallucinate.");
             }
             
             String response = aiService.generateQuiz(request.getPrompt(), resource);
