@@ -346,7 +346,7 @@ export function TeacherResources() {
     }
   };
 
-  const handleGenerateAIQuiz = async () => {
+  const handleGenerateAIQuiz = async (resId: number) => {
     if (!aiPrompt) {
       setQuizStatusMsg('Please provide a prompt to generate questions.');
       return;
@@ -360,7 +360,7 @@ export function TeacherResources() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt: aiPrompt })
+        body: JSON.stringify({ prompt: aiPrompt, resourceId: resId })
       });
       if (response.ok) {
         const text = await response.text();
@@ -639,7 +639,7 @@ export function TeacherResources() {
                                           onChange={(e) => setAiPrompt(e.target.value)}
                                           className="w-full text-xs neu-inset bg-color-surface p-2.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent min-h-[60px]"
                                         />
-                                        <Button size="sm" onClick={handleGenerateAIQuiz} disabled={generating} className="w-full text-xs font-bold h-8">
+                                        <Button size="sm" onClick={() => handleGenerateAIQuiz(res.id)} disabled={generating} className="w-full text-xs font-bold h-8">
                                           {generating ? 'Generating...' : 'Generate Questions'}
                                         </Button>
                                       </div>
