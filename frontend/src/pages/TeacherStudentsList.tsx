@@ -130,7 +130,10 @@ export function TeacherStudentsList() {
                   </div>
                   <div className="min-w-0 flex flex-col items-start">
                     <h3 className="font-bold text-base text-color-text font-serif leading-tight truncate w-full">{student.name}</h3>
-                    <div className="mt-1">
+                    <div className="flex items-center gap-1.5 text-[10px] text-color-muted mt-0.5 font-medium truncate mb-1.5">
+                      <Mail className="w-3.5 h-3.5" /> {student.email}
+                    </div>
+                    <div>
                       <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-sm border ${
                         student.status === 'Critical' ? 'bg-color-critical/10 text-color-critical border-color-critical/30' :
                         student.status === 'At-Risk' ? 'bg-color-warning/10 text-orange-600 border-color-warning/30' :
