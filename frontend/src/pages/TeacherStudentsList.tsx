@@ -125,13 +125,20 @@ export function TeacherStudentsList() {
               {/* Header: Identity & Risk */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-color-accent text-white flex items-center justify-center font-bold font-serif text-lg shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)] uppercase">
+                  <div className="w-10 h-10 rounded-xl bg-color-accent text-white flex items-center justify-center font-bold font-serif text-lg shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)] uppercase shrink-0">
                     {student.name.charAt(0)}
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-base text-color-text font-serif leading-tight truncate">{student.name}</h3>
-                    <div className="flex items-center gap-1.5 text-[10px] text-color-muted mt-0.5 font-medium truncate">
-                      <Mail className="w-3.5 h-3.5" /> {student.email}
+                  <div className="min-w-0 flex flex-col items-start">
+                    <h3 className="font-bold text-base text-color-text font-serif leading-tight truncate w-full">{student.name}</h3>
+                    <div className="mt-1">
+                      <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-sm border ${
+                        student.status === 'Critical' ? 'bg-color-critical/10 text-color-critical border-color-critical/30' :
+                        student.status === 'At-Risk' ? 'bg-color-warning/10 text-orange-600 border-color-warning/30' :
+                        student.status === 'Watch' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                        'bg-color-success/10 text-color-success border-color-success/30'
+                      }`}>
+                        {student.status}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -231,8 +231,8 @@ public class AiController {
     @PostMapping("/intervention-insight")
     public ResponseEntity<?> generateInterventionInsight(@RequestBody PromptRequest request) {
         try {
-            String systemPrompt = "You are an expert teacher's assistant AI.";
-            String userPrompt = "Based on the following student performance data and behavioral flags, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Data: " + request.getPrompt();
+            String systemPrompt = "You are an expert teacher's assistant AI. Your task is to ALWAYS generate a helpful intervention strategy for a student, regardless of whether some data fields are empty or missing. Never refuse to generate a strategy.";
+            String userPrompt = "Based on the following student performance data, provide a single, actionable, strict 1-sentence intervention strategy. Be highly specific and professional. Even if behavioral flags are missing, suggest a general strategy based on the risk score. Data: " + request.getPrompt();
             String response = aiService.generateText(systemPrompt, userPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
