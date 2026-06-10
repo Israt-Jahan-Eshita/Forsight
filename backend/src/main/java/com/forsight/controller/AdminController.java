@@ -90,4 +90,28 @@ public class AdminController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @org.springframework.web.bind.annotation.PutMapping("/users/{id}/toggle-status")
+    public ResponseEntity<?> toggleUserStatus(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        try {
+            User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+            String newStatus = "Active".equals(user.getStatus()) ? "Inactive" : "Active";
+            user.setStatus(newStatus);
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of("message", "Status updated to " + newStatus, "status", newStatus));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        try {
+            User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+            userRepository.delete(user);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

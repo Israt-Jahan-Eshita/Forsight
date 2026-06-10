@@ -1,8 +1,9 @@
 import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Sparkles, Filter } from 'lucide-react';
+import { Mail, Sparkles, Filter, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { JudgeBanner } from '../components/ui/JudgeBanner';
 
@@ -23,6 +24,7 @@ export function TeacherStudentsList() {
   const [sortCriticalFirst, setSortCriticalFirst] = useState(true);
   const [aiInsights, setAiInsights] = useState<Record<number, string>>({});
   const [generatingInsight, setGeneratingInsight] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -197,6 +199,17 @@ export function TeacherStudentsList() {
                   <span className="text-sm font-bold text-color-text">{student.courseName}</span>
                 </div>
               </div>
+
+              {/* Access Details Button */}
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => navigate(`/teacher/student/${student.id}`)}
+                className="w-full mt-3 h-9 border border-color-accent/20 bg-color-accent/5 text-color-accent font-bold shadow-sm text-xs"
+              >
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Access Details
+              </Button>
             </Card>
           ))}
         </div>
