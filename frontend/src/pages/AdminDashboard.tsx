@@ -80,7 +80,6 @@ export function AdminDashboard() {
       });
       if (res.ok) fetchAll();
     } catch (e) { console.error(e); }
-    setOpenMenuId(null);
   };
 
   const deleteUser = async (userId: number) => {
@@ -92,7 +91,6 @@ export function AdminDashboard() {
       });
       if (res.ok) fetchAll();
     } catch (e) { console.error(e); }
-    setOpenMenuId(null);
   };
 
   const filteredTeachers = teachers.filter(t => 
