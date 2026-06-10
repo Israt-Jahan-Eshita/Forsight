@@ -247,21 +247,27 @@ export function AdminDashboard() {
                         <td className="px-5 py-3.5">
                           <Badge variant={teacher.status === 'Active' ? 'success' : 'default'}>{teacher.status || 'Active'}</Badge>
                         </td>
-                        <td className="px-5 py-3.5 text-right relative">
-                          <Button variant="icon" size="sm" className="cursor-pointer hover:bg-black/5 rounded-full p-1" onClick={() => setOpenMenuId(openMenuId === teacher.id ? null : teacher.id)}>
-                            <MoreVertical className="w-3.5 h-3.5 text-color-muted" />
-                          </Button>
-                          {openMenuId === teacher.id && (
-                            <div className="absolute right-4 top-10 z-50 w-44 bg-color-surface neu-raised border border-white/50 rounded-xl shadow-lg py-1 animate-fade-in">
-                              <button onClick={() => toggleUserStatus(teacher.id)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-color-text hover:bg-black/5 cursor-pointer transition-colors">
-                                {teacher.status === 'Active' ? <ToggleLeft className="w-3.5 h-3.5 text-color-warning" /> : <ToggleRight className="w-3.5 h-3.5 text-color-success" />}
-                                {teacher.status === 'Active' ? 'Set Inactive' : 'Set Active'}
-                              </button>
-                              <button onClick={() => deleteUser(teacher.id)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-color-danger hover:bg-color-danger/5 cursor-pointer transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Delete User
-                              </button>
-                            </div>
-                          )}
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => toggleUserStatus(teacher.id)}
+                              className="cursor-pointer hover:bg-black/5 rounded-full p-1.5"
+                              title={teacher.status === 'Active' ? 'Deactivate' : 'Activate'}
+                            >
+                              {teacher.status === 'Active' ? <ToggleLeft className="w-4 h-4 text-color-warning" /> : <ToggleRight className="w-4 h-4 text-color-success" />}
+                            </Button>
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => deleteUser(teacher.id)}
+                              className="cursor-pointer hover:bg-color-danger/10 hover:text-color-danger rounded-full p-1.5 transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -299,21 +305,27 @@ export function AdminDashboard() {
                         <td className="px-5 py-3.5">
                           <Badge variant={student.status === 'Active' ? 'success' : 'default'}>{student.status || 'Active'}</Badge>
                         </td>
-                        <td className="px-5 py-3.5 text-right relative">
-                          <Button variant="icon" size="sm" className="cursor-pointer hover:bg-black/5 rounded-full p-1" onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}>
-                            <MoreVertical className="w-3.5 h-3.5 text-color-muted" />
-                          </Button>
-                          {openMenuId === student.id && (
-                            <div className="absolute right-4 top-10 z-50 w-44 bg-color-surface neu-raised border border-white/50 rounded-xl shadow-lg py-1 animate-fade-in">
-                              <button onClick={() => toggleUserStatus(student.id)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-color-text hover:bg-black/5 cursor-pointer transition-colors">
-                                {student.status === 'Active' ? <ToggleLeft className="w-3.5 h-3.5 text-color-warning" /> : <ToggleRight className="w-3.5 h-3.5 text-color-success" />}
-                                {student.status === 'Active' ? 'Set Inactive' : 'Set Active'}
-                              </button>
-                              <button onClick={() => deleteUser(student.id)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-color-danger hover:bg-color-danger/5 cursor-pointer transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" /> Delete User
-                              </button>
-                            </div>
-                          )}
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => toggleUserStatus(student.id)}
+                              className="cursor-pointer hover:bg-black/5 rounded-full p-1.5"
+                              title={student.status === 'Active' ? 'Deactivate' : 'Activate'}
+                            >
+                              {student.status === 'Active' ? <ToggleLeft className="w-4 h-4 text-color-warning" /> : <ToggleRight className="w-4 h-4 text-color-success" />}
+                            </Button>
+                            <Button 
+                              variant="icon" 
+                              size="sm" 
+                              onClick={() => deleteUser(student.id)}
+                              className="cursor-pointer hover:bg-color-danger/10 hover:text-color-danger rounded-full p-1.5 transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
