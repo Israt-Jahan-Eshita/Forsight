@@ -8,7 +8,7 @@ import { JudgeBanner } from '../components/ui/JudgeBanner';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, Activity, AlertOctagon, Server, 
-  MoreVertical, Calendar, Database, Plus, Search, ToggleLeft, ToggleRight, Trash2 
+  Calendar, Database, Plus, Search, ToggleLeft, ToggleRight, Trash2 
 } from 'lucide-react';
 
 interface SystemStats {
@@ -44,7 +44,6 @@ export function AdminDashboard() {
   const [students, setStudents] = useState<UserRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAll();
